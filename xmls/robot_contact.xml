@@ -1,0 +1,14 @@
+<contact>
+    <exclude body1="base" body2="left_driver" />
+    <exclude body1="base" body2="right_driver" />
+    <exclude body1="base" body2="left_spring_link" />
+    <exclude body1="base" body2="right_spring_link" />
+    <exclude body1="motoman_base" body2="torso_link_b1" />
+    <exclude body1="right_coupler" body2="right_follower" />
+    <exclude body1="left_coupler" body2="left_follower" />
+    <exclude body1="arm_left_link_7_t" body2="left_ee" />
+    <exclude body1="left_ee_tip" body2="left_ee" />
+  </contact>
+
+  
+  

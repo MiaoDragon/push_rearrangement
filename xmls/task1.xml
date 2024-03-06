@@ -1,0 +1,140 @@
+<mujoco model="RobotPush1">
+<!-- Pushing one object from start to goal -->
+  <!-- <compiler angle="radian" balanceinertia="true" inertiafromgeom="true" 
+    meshdir="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/"
+    texturedir="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/"
+    autolimits="true"/> -->
+  <include file="robot_push.xml"/>
+  <include file="obj_setup1.xml"/>
+
+  <!-- <size memory="1M"/> -->
+
+  <custom>
+    <!-- agent -->
+    <numeric name="agent_planner" data="2" />
+    <numeric name="agent_horizon" data="10" />
+    <numeric name="agent_timestep" data="0.002" />
+    <numeric name="agent_integrator" data="2" />
+    <numeric name="agent_policy_width" data="0.0015" />
+    <numeric name="sampling_spline_points" data="30" />
+    <numeric name="sampling_exploration" data="0.002" />
+    <numeric name="gradient_spline_points" data="30" />
+    <numeric name="residual_Torso Goal" data="0 -1.58 1.58" />
+    <numeric name="residual_Arm Left1 Goal" data="0 -3.13 3.13" />
+    <numeric name="residual_Arm Left2 Goal" data="0 -1.9 1.9" />
+    <numeric name="residual_Arm Left3 Goal" data="0 -2.95 2.95" />
+    <numeric name="residual_Arm Left4 Goal" data="0 -2.36 2.36" />
+    <numeric name="residual_Arm Left5 Goal" data="0 -3.13 3.13" />
+    <numeric name="residual_Arm Left6 Goal" data="0 -1.9 1.9" />
+    <numeric name="residual_Arm Left7 Goal" data="0 -3.13 3.13" />
+    <numeric name="residual_Arm Right1 Goal" data="0 -3.13 3.13" />
+    <numeric name="residual_Arm Right2 Goal" data="0 -1.9 1.9" />
+    <numeric name="residual_Arm Right3 Goal" data="0 -2.95 2.95" />
+    <numeric name="residual_Arm Right4 Goal" data="0 -2.36 2.36" />
+    <numeric name="residual_Arm Right5 Goal" data="0 -3.13 3.13" />
+    <numeric name="residual_Arm Right6 Goal" data="0 -1.9 1.9" />
+    <numeric name="residual_Arm Right7 Goal" data="0 -3.13 3.13" />
+
+    <!-- estimator -->
+    <numeric name="estimator" data="0" />
+    <numeric name="estimator_sensor_start" data="2" />
+    <numeric name="estimator_number_sensor" data="8" />
+    <numeric name="estimator_timestep" data="0.0075" />
+    <numeric name="batch_configuration_length" data="3" />
+    <numeric name="batch_scale_prior" data="1.0e-3" />
+  </custom>
+
+  <statistic extent="1.5" center="0.1 0.2 0.3"/>
+
+<!-- 
+  <default>
+    <geom solref=".001 1"/>
+  </default> -->
+
+
+  <!-- <contact>
+    <exclude body1="world" body2="left_finger"/>
+    <exclude body1="world" body2="right_finger"/>
+    <exclude body1="left_finger" body2="right_finger"/>
+  </contact> -->
+
+  <sensor>
+    <!-- Residual 0-2: distance from robot hand to the object -->
+
+    <!-- <user name="Control torso" dim="1" user="0 0.1 0 5"/> -->
+    <user name="Robot Control" dim="15" user="0 0.02 0 5"/>
+
+    <!-- <user name="Control torso" dim="1" user="0 0.1 0 5"/>
+    <user name="Control arm 1" dim="1" user="0 0.1 0 5"/>
+    <user name="Control arm 2" dim="1" user="0 0.1 0 5"/>
+    <user name="Control arm 3" dim="1" user="0 0.1 0 5"/>
+    <user name="Control arm 4" dim="1" user="0 0.1 0 5"/>
+    <user name="Control arm 5" dim="1" user="0 0.1 0 5"/>
+    <user name="Control arm 6" dim="1" user="0 0.1 0 5"/>
+    <user name="Control arm 7" dim="1" user="0 0.1 0 5"/>
+    <user name="Control arm 8" dim="1" user="0 0.1 0 5"/>
+    <user name="Control arm 9" dim="1" user="0 0.1 0 5"/>
+    <user name="Control axrm 10" dim="1" user="0 0.1 0 5"/>
+    <user name="Control arm 11" dim="1" user="0 0.1 0 5"/>
+    <user name="Control arm 12" dim="1" user="0 0.1 0 5"/>
+    <user name="Control arm 13" dim="1" user="0 0.1 0 5"/>
+    <user name="Control arm 14" dim="1" user="0 0.1 0 5"/> -->
+
+    <user name="Robot Position" dim="15" user="0 0.2 0 5"/>
+    <!-- <user name="Torso Position" dim="1" user="2 0.1 0 5 0.1"/>
+    <user name="Left Arm Position 1" dim="1" user="2 0.1 0 5 0.1"/>
+    <user name="Left Arm Position 2" dim="1" user="2 0.1 0 5 0.1"/>
+    <user name="Left Arm Position 3" dim="1" user="2 0.1 0 5 0.1"/>
+    <user name="Left Arm Position 4" dim="1" user="2 0.1 0 5 0.1"/>
+    <user name="Left Arm Position 5" dim="1" user="2 0.1 0 5 0.1"/>
+    <user name="Left Arm Position 6" dim="1" user="2 0.1 0 5 0.1"/>
+    <user name="Left Arm Position 7" dim="1" user="2 0.1 0 5 0.1"/>
+
+    <user name="Right Arm Position 1" dim="1" user="2 0.1 0 5 0.1"/>
+    <user name="Right Arm Position 2" dim="1" user="2 0.1 0 5 0.1"/>
+    <user name="Right Arm Position 3" dim="1" user="2 0.1 0 5 0.1"/>
+    <user name="Right Arm Position 4" dim="1" user="2 0.1 0 5 0.1"/>
+    <user name="Right Arm Position 5" dim="1" user="2 0.1 0 5 0.1"/>
+    <user name="Right Arm Position 6" dim="1" user="2 0.1 0 5 0.1"/>
+    <user name="Right Arm Position 7" dim="1" user="2 0.1 0 5 0.1"/> -->
+
+
+    <user name="Reach" dim="3" user="2 0.1 0 5 0.01"/>
+
+    <!-- Residual 3-5: object position to goal -->
+    <user name="Object Position" dim="3" user="2 1 0 5 0.01"/>
+    <!-- Residual 6-8: object orientation to goal -->
+    <user name="Object Orientation" dim="3" user="2 1 0 5 0.01"/>
+
+    <framepos name="hand_position" objtype="site" objname="eeff"/>
+    <framequat name="hand_quat" objtype="site" objname="eeff"/>
+    <framepos name="obj_position" objtype="body" objname="object"/>
+    <framequat name="obj_orientation" objtype="body" objname="object"/>
+    <framepos name="goal_position" objtype="body" objname="goal"/>
+    <framequat name="goal_orientation" objtype="body" objname="goal"/>
+    <jointpos name="torso_pos" joint="torso_joint_b1"/>
+    <jointpos name="left_1_pos" joint="arm_left_joint_1_s"/>
+    <jointpos name="left_2_pos" joint="arm_left_joint_2_l"/>
+    <jointpos name="left_3_pos" joint="arm_left_joint_3_e"/>
+    <jointpos name="left_4_pos" joint="arm_left_joint_4_u"/>
+    <jointpos name="left_5_pos" joint="arm_left_joint_5_r"/>
+    <jointpos name="left_6_pos" joint="arm_left_joint_6_b"/>
+    <jointpos name="left_7_pos" joint="arm_left_joint_7_t"/>
+    <jointpos name="right_1_pos" joint="arm_right_joint_1_s"/>
+    <jointpos name="right_2_pos" joint="arm_right_joint_2_l"/>
+    <jointpos name="right_3_pos" joint="arm_right_joint_3_e"/>
+    <jointpos name="right_4_pos" joint="arm_right_joint_4_u"/>
+    <jointpos name="right_5_pos" joint="arm_right_joint_5_r"/>
+    <jointpos name="right_6_pos" joint="arm_right_joint_6_b"/>
+    <jointpos name="right_7_pos" joint="arm_right_joint_7_t"/>
+<!-- 
+    <framepos name="box1" objtype="site" objname="box1"/>
+    <framepos name="box2" objtype="site" objname="box2"/>
+    <framepos name="target" objtype="geom" objname="target"/>
+    <framepos name="target1" objtype="site" objname="target1"/>
+    <framepos name="target2" objtype="site" objname="target2"/>
+    <framepos name="trace0" objtype="site" objname="touch_left"/>
+    <framepos name="trace1" objtype="site" objname="touch_right"/> -->
+  </sensor>
+
+</mujoco>

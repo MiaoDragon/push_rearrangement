@@ -1,0 +1,39 @@
+<asset>
+    <mesh name="motoman_base_v" file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/motoman_model/meshes/motoman_base_v.stl" />
+    <mesh name="motoman_base" file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/motoman_model/meshes/motoman_base.stl" />
+    <mesh name="motoman_axis_b1_v" file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/motoman_model/meshes/motoman_axis_b1_v.stl" />
+    <mesh name="motoman_axis_b1_remeshed" file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/motoman_model/meshes/motoman_axis_b1_remeshed.stl" />
+    <mesh name="motoman_axis_s_v" file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/motoman_model/meshes/motoman_axis_s_v.stl" />
+    <mesh name="motoman_axis_s" file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/motoman_model/meshes/motoman_axis_s.stl" />
+    <mesh name="motoman_axis_l_v" file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/motoman_model/meshes/motoman_axis_l_v.stl" />
+    <mesh name="motoman_axis_l" file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/motoman_model/meshes/motoman_axis_l.stl" />
+    <mesh name="motoman_axis_e_v" file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/motoman_model/meshes/motoman_axis_e_v.stl" />
+    <mesh name="motoman_axis_e" file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/motoman_model/meshes/motoman_axis_e.stl" />
+    <mesh name="motoman_axis_u_v" file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/motoman_model/meshes/motoman_axis_u_v.stl" />
+    <mesh name="motoman_axis_u" file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/motoman_model/meshes/motoman_axis_u.stl" />
+    <mesh name="motoman_axis_r_v" file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/motoman_model/meshes/motoman_axis_r_v.stl" />
+    <mesh name="motoman_axis_r" file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/motoman_model/meshes/motoman_axis_r.stl" />
+    <mesh name="motoman_axis_b_v" file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/motoman_model/meshes/motoman_axis_b_v.stl" />
+    <mesh name="motoman_axis_b_remeshed" file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/motoman_model/meshes/motoman_axis_b_remeshed.stl" />
+    <mesh name="motoman_axis_t_v" file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/motoman_model/meshes/motoman_axis_t_v.stl" />
+    <mesh name="motoman_axis_t" file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/motoman_model/meshes/motoman_axis_t.stl" />
+    <mesh name="base_link_v" file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/motoman_model/meshes/base_link_v.stl" />
+    <mesh name="base_link" file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/motoman_model/meshes/base_link.stl" />
+    <mesh name="suction_cup_v" file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/motoman_model/meshes/suction_cup_v.stl" />
+    <mesh name="suction_cup" file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/motoman_model/meshes/suction_cup.stl" />
+
+    <material name="metal" rgba="0.58 0.58 0.58 1" />
+    <material name="silicone" rgba="0.1882 0.1882 0.1882 1" />
+    <material name="gray" rgba="0.4627 0.4627 0.4627 1" />
+    <material name="black" rgba="0.149 0.149 0.149 1" />
+
+    <mesh class="2f85" file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/motoman_model/meshes/base_mount.stl" />
+    <mesh class="2f85" file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/motoman_model/meshes/base.stl" />
+    <mesh class="2f85" file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/motoman_model/meshes/driver.stl" />
+    <mesh class="2f85" file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/motoman_model/meshes/coupler.stl" />
+    <mesh class="2f85" file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/motoman_model/meshes/follower.stl" />
+    <mesh class="2f85" file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/motoman_model/meshes/pad.stl" />
+    <mesh class="2f85" file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/motoman_model/meshes/silicone_pad.stl" />
+    <mesh class="2f85" file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/motoman_model/meshes/spring_link.stl" />
+  </asset>
+  
