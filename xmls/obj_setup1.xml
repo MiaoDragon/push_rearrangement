@@ -1,10 +1,10 @@
 <mujoco model="obj_setup">
   <worldbody>
-    <body name="object" pos="0.7399660902822591 -0.05971188968363312 1.08" quat="0.9999876884441344 -0.003640889346286578 -0.003226259955834315 0.000978841980307978">
-      <!-- <geom group="3" mesh="cracker_box_col" type="mesh"/>
-      <geom conaffinity="0" contype="0" group="1" material="cracker_box_vis" mesh="cracker_box_vis" type="mesh"/> -->
-      <geom type="box" name='object_geom' size="0.04 0.1 0.08" rgba="0 1 0 1"/>
-      <joint type="free"/>
+    <body name="object_0" pos="0.7399660902822591 -0.05971188968363312 1.08" quat="0.9999876884441344 -0.003640889346286578 -0.003226259955834315 0.000978841980307978">
+    <!-- <geom group="3" mesh="cracker_box_col" type="mesh"/>
+    <geom conaffinity="0" contype="0" group="1" material="cracker_box_vis" mesh="cracker_box_vis" type="mesh"/> -->
+    <geom type="box" name='object_geom' size="0.04 0.1 0.08" rgba="0 1 0 1"/>
+    <joint type="free"/>
     </body>
 
     <body name="goal" mocap="true" pos="0.7699660902822591 -0.08971188968363312 1.08" quat="0.9999876884441344 -0.003640889346286578 -0.003226259955834315 0.000978841980307978">

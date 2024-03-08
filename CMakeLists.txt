@@ -44,6 +44,8 @@ link_libraries(${example_required_libraries})
 
 add_subdirectory(src/utilities)
 add_subdirectory(src/contact)
+add_subdirectory(src/constraint)
+add_subdirectory(src/tests)
 
 
 

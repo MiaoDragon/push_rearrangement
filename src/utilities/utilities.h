@@ -28,6 +28,7 @@ void hat_operator(const Vector3d& a, Matrix3d& res)
 void adjoint(Matrix4d& g, Matrix6d& res)
 {
     Matrix3d R = g.block<3,3>(0,0);
+    res.setZero();
     res.block<3,3>(0,0) = R;
     Matrix3d temp;
     hat_operator(g.block<3,1>(0,3), temp);
@@ -43,6 +44,7 @@ void pos_mat_to_transform(double* pos, double* mat, Matrix4d& res)
     res(0,0) = mat[0]; res(0,1) = mat[1]; res(0,2) = mat[2];
     res(1,0) = mat[3]; res(1,1) = mat[4]; res(1,2) = mat[5];
     res(2,0) = mat[6]; res(2,1) = mat[7]; res(2,2) = mat[8];
+    res(3,3) = 1;
 }
 
 
@@ -53,11 +55,15 @@ void pos_mat_to_transform(double* pos, double* mat, Matrix4d& res)
 
 void mj_to_transform(mjModel* m, mjData* d, int bid, Matrix4d& g)
 {
+    g.setZero();
+
     g(0,3) = d->xpos[bid*3+0];
     g(1,3) = d->xpos[bid*3+1];
     g(2,3) = d->xpos[bid*3+2];
 
-    g(0,0) = d->xmat[bid*3+0]; g(0,1) = d->xmat[bid*3+1]; g(0,2) = d->xmat[bid*3+2];
-    g(1,0) = d->xmat[bid*3+3]; g(1,1) = d->xmat[bid*3+4]; g(1,2) = d->xmat[bid*3+5];
-    g(2,0) = d->xmat[bid*3+6]; g(2,1) = d->xmat[bid*3+7]; g(2,2) = d->xmat[bid*3+8];
+    g(0,0) = d->xmat[bid*9+0]; g(0,1) = d->xmat[bid*9+1]; g(0,2) = d->xmat[bid*9+2];
+    g(1,0) = d->xmat[bid*9+3]; g(1,1) = d->xmat[bid*9+4]; g(1,2) = d->xmat[bid*9+5];
+    g(2,0) = d->xmat[bid*9+6]; g(2,1) = d->xmat[bid*9+7]; g(2,2) = d->xmat[bid*9+8];
+
+    g(3,3) = 1;
 }

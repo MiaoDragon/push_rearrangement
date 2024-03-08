@@ -1,0 +1,61 @@
+<mujoco model="RobotPush1">
+<!-- Pushing one object from start to goal -->
+  <!-- <compiler angle="radian" balanceinertia="true" inertiafromgeom="true" 
+    meshdir="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/"
+    texturedir="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/"
+    autolimits="true"/> -->
+  <include file="point_push.xml"/>
+  <include file="obj_setup1.xml"/>
+
+  <!-- <size memory="1M"/> -->
+
+  <custom>
+    <!-- agent -->
+    <numeric name="agent_planner" data="2" />
+    <numeric name="agent_horizon" data="10" />
+    <numeric name="agent_timestep" data="0.002" />
+    <numeric name="agent_integrator" data="2" />
+    <numeric name="agent_policy_width" data="0.0015" />
+    <numeric name="sampling_spline_points" data="30" />
+    <numeric name="sampling_exploration" data="0.002" />
+    <numeric name="gradient_spline_points" data="30" />
+    <numeric name="residual_Torso Goal" data="0 -1.58 1.58" />
+    <numeric name="residual_Arm Left1 Goal" data="0 -3.13 3.13" />
+    <numeric name="residual_Arm Left2 Goal" data="0 -1.9 1.9" />
+    <numeric name="residual_Arm Left3 Goal" data="0 -2.95 2.95" />
+    <numeric name="residual_Arm Left4 Goal" data="0 -2.36 2.36" />
+    <numeric name="residual_Arm Left5 Goal" data="0 -3.13 3.13" />
+    <numeric name="residual_Arm Left6 Goal" data="0 -1.9 1.9" />
+    <numeric name="residual_Arm Left7 Goal" data="0 -3.13 3.13" />
+    <numeric name="residual_Arm Right1 Goal" data="0 -3.13 3.13" />
+    <numeric name="residual_Arm Right2 Goal" data="0 -1.9 1.9" />
+    <numeric name="residual_Arm Right3 Goal" data="0 -2.95 2.95" />
+    <numeric name="residual_Arm Right4 Goal" data="0 -2.36 2.36" />
+    <numeric name="residual_Arm Right5 Goal" data="0 -3.13 3.13" />
+    <numeric name="residual_Arm Right6 Goal" data="0 -1.9 1.9" />
+    <numeric name="residual_Arm Right7 Goal" data="0 -3.13 3.13" />
+
+    <!-- estimator -->
+    <numeric name="estimator" data="0" />
+    <numeric name="estimator_sensor_start" data="2" />
+    <numeric name="estimator_number_sensor" data="8" />
+    <numeric name="estimator_timestep" data="0.0075" />
+    <numeric name="batch_configuration_length" data="3" />
+    <numeric name="batch_scale_prior" data="1.0e-3" />
+  </custom>
+
+  <statistic extent="1.5" center="0.1 0.2 0.3"/>
+
+<!-- 
+  <default>
+    <geom solref=".001 1"/>
+  </default> -->
+
+
+  <!-- <contact>
+    <exclude body1="world" body2="left_finger"/>
+    <exclude body1="world" body2="right_finger"/>
+    <exclude body1="left_finger" body2="right_finger"/>
+  </contact> -->
+
+</mujoco>

@@ -108,8 +108,8 @@
 
     <framepos name="hand_position" objtype="site" objname="eeff"/>
     <framequat name="hand_quat" objtype="site" objname="eeff"/>
-    <framepos name="obj_position" objtype="body" objname="object"/>
-    <framequat name="obj_orientation" objtype="body" objname="object"/>
+    <framepos name="obj_position" objtype="body" objname="object_0"/>
+    <framequat name="obj_orientation" objtype="body" objname="object_0"/>
     <framepos name="goal_position" objtype="body" objname="goal"/>
     <framequat name="goal_orientation" objtype="body" objname="goal"/>
     <jointpos name="torso_pos" joint="torso_joint_b1"/>

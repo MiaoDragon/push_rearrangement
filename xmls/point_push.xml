@@ -1,0 +1,75 @@
+
+<?xml version="1.0" encoding="utf-8"?>
+<mujoco model="scene1">
+  <compiler angle="radian" balanceinertia="true" inertiafromgeom="true" 
+    meshdir="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/"
+    texturedir="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/"
+    autolimits="true"/>
+
+  <!-- <option>
+    <flag warmstart="disable" />
+  </option> -->
+  <!-- <default>
+    <geom solref="0.004 1"/>
+    <default class="workspace">
+        <geom friction="1 0.005 0.0001"/>
+    </default>
+  </default> -->
+  <asset>
+    <texture builtin="checker" height="512" name="grid" rgb1="0.1 0.2 0.3" rgb2="0.2 0.3 0.4" type="2d" width="512"/>
+    <material name="grid" emission="1" reflectance="0" shininess="0" specular="0" texrepeat="0.5 0.5" texture="grid" texuniform="true"/>
+    <mesh file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/data/models/objects/ocrtoc/a_cups/collision_meshes/collision/collision.obj" name="a_cups_col" scale="1 1 1"/>
+    <mesh file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/data/models/objects/ocrtoc/a_cups/meshes/visual/visual.obj" name="a_cups_vis" scale="1 1 1"/>
+    <texture file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/data/models/objects/ocrtoc/a_cups/meshes/visual/texture_map.png" name="a_cups_vis" type="2d"/>
+    <material name="a_cups_vis" texture="a_cups_vis"/>
+    <mesh file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/data/models/objects/ocrtoc/b_cups/collision_meshes/collision/collision.obj" name="b_cups_col" scale="1 1 1"/>
+    <mesh file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/data/models/objects/ocrtoc/b_cups/meshes/visual/visual.obj" name="b_cups_vis" scale="1 1 1"/>
+    <texture file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/data/models/objects/ocrtoc/b_cups/meshes/visual/texture_map.png" name="b_cups_vis" type="2d"/>
+    <material name="b_cups_vis" texture="b_cups_vis"/>
+    <mesh file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/data/models/objects/ocrtoc/a_toy_airplane/collision_meshes/collision/collision.obj" name="a_toy_airplane_col" scale="1 1 1"/>
+    <mesh file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/data/models/objects/ocrtoc/a_toy_airplane/meshes/visual/visual.obj" name="a_toy_airplane_vis" scale="1 1 1"/>
+    <texture file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/data/models/objects/ocrtoc/a_toy_airplane/meshes/visual/texture_map.png" name="a_toy_airplane_vis" type="2d"/>
+    <material name="a_toy_airplane_vis" texture="a_toy_airplane_vis"/>
+    <mesh file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/data/models/objects/ocrtoc/cracker_box/collision_meshes/collision/collision.obj" name="cracker_box_col" scale="1 1 1"/>
+    <mesh file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/data/models/objects/ocrtoc/cracker_box/meshes/visual/visual.obj" name="cracker_box_vis" scale="1 1 1"/>
+    <texture file="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/data/models/objects/ocrtoc/cracker_box/meshes/visual/texture_map.png" name="cracker_box_vis" type="2d"/>
+    <material name="cracker_box_vis" texture="cracker_box_vis"/>
+  </asset>
+  <worldbody>
+    <geom condim="3" material="grid" name="floor" size="2 2 0.05" type="plane"/>
+    <geom conaffinity="0" contype="0" group="1" material="grid" name="floor_vis" size="2 2 0.05" type="plane"/>
+    <light castshadow="false" diffuse="1 1 1" dir="0 0 -1" directional="true" pos="-0.5 0.5 3"/>
+    <!-- <site name="world"/> -->
+    <!-- <body name="workspace" pos="0.4 0 0" quat="1 0 0 0">   -->
+    <body name="workspace" pos="-0.1 0 0" quat="1 0 0 0">  
+      <geom name="shelf_bottom" pos="0.925 0 0.5" rgba="1.0 0.64 0.0 1.0" size="0.175 0.45 0.5" type="box" quat="1 0 0 0"/>
+      <geom conaffinity="0" contype="0" group="1" name="shelf_bottom_vis" pos="0.925 0 0.5" rgba="1.0 0.64 0.0 1.0" size="0.175 0.45 0.5" type="box" quat="1 0 0 0"/>
+    </body>
+    <body mocap="true" name="body_cam" pos="0.4 0 1.1" xyaxes="0 -1 0 0 0 1">
+        <camera fovy="50" name="cam"/>
+        <geom conaffinity="2" contype="2" name="geom_cam" rgba="0 0 0 1" size="0.04 0.04 0.01" type="box"/>
+    </body>
+
+    <body name="pointmass" pos="0.22 0 0.1" gravcomp="1">
+      <camera name="cam0" pos="0 -0.3 0.3" xyaxes="1 0 0 0 0.7 0.7"/>
+      <joint name="root_x" type="slide"  pos="0 0 0" axis="1 0 0" />
+      <joint name="root_y" type="slide"  pos="0 0 0" axis="0 1 0" />
+      <joint name="root_z" type="slide"  pos="0 0 0" axis="0 0 1" />
+      <geom name="pointmass" type="sphere" size=".001" mass="0.05"/>
+      <site name="tip" pos="0 0 0" size="0.001"/>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <velocity name="x_vel" joint="root_x" kv="10" ctrllimited="true" ctrlrange="-0.1 0.1"/>
+    <velocity name="y_vel" joint="root_y" kv="10" ctrllimited="true" ctrlrange="-0.1 0.1"/>
+    <velocity name="z_vel" joint="root_z" kv="10" ctrllimited="true" ctrlrange="-0.1 0.1"/>
+    <!-- <velocity name="x_vel" joint="root_x" kv="10" ctrllimited="true" ctrlrange="-0.05 0.05"/>
+    <velocity name="y_vel" joint="root_y" kv="10" ctrllimited="true" ctrlrange="-0.05 0.05"/>
+    <velocity name="z_vel" joint="root_z" kv="10" ctrllimited="true" ctrlrange="-0.05 0.05"/> -->
+    <!-- <motor name="x_vel" joint="root_x" gear="1" ctrllimited="true" ctrlrange="-1 1"/>
+    <motor name="y_vel" joint="root_y" gear="1" ctrllimited="true" ctrlrange="-1 1"/>
+    <motor name="z_vel" joint="root_z" gear="1" ctrllimited="true" ctrlrange="-1 1"/> -->
+
+  </actuator>
+</mujoco>
