@@ -39,7 +39,7 @@
  *
  * NOTE:
  * this is a general formulation of the constraints.
- * variables: V1, V2 (twist in body frame),
+ * variables: V1, V2 (twist in body or spatial frame),
  *            vc (linear velocity at contact, written in contact frame)
  *               body 1 relative to body 2
  *            fc (linear force at contact, written in contact frame)
@@ -116,15 +116,30 @@ void contact_constraint(mjModel* m, mjData* d, Contact* contact,
     /* constraints for Adj_g1[0:3,:] V1 - Adj_g2[0:3,:] V2 - vc=0 */
     // vc = vn * normal + sum_iv_ti1*axis(i) + sum_iv_ti2*(-axis(i))
     // this is Ce[0:3,0:6], Ce[0:3,6:12], Ce[0:3,12:15]
-    Matrix6d adj1, adj2;
+    /**
+     * @brief 
+     * depends on what coord frame V1 and V2 are in. The difference affects adjoint.
+     * If we specify V1, V2 in their body frame, the adjoint should be Ad_gc1 and Ad_gc2.
+     * If we specify V1, V2 in their spatial frame, then adjoint should be Ad_gcw.
+     * NOTE:
+     * for easier case, since Mujoco Jacobian should be in spatial frame, we use spatial frame.
+     */
+
+    Matrix6d adj1, adj2, adj;
     adjoint(cg1, adj1); adjoint(cg2, adj2);
+    adjoint(cw, adj);
     std::cout << "adj1: " << std::endl;
     std::cout << adj1 << std::endl;
     std::cout << "adj2: " << std::endl;
     std::cout << adj2 << std::endl;
+    std::cout << "adj: " << std::endl;
+    std::cout << adj << std::endl;
 
-    Ce.block<3,6>(ce_padding+0,0) = adj1.block<3,6>(0,0);
-    Ce.block<3,6>(ce_padding+0,6) = -adj2.block<3,6>(0,0);
+    // Ce.block<3,6>(ce_padding+0,0) = adj1.block<3,6>(0,0);
+    // Ce.block<3,6>(ce_padding+0,6) = -adj2.block<3,6>(0,0);
+    Ce.block<3,6>(ce_padding+0,0) = adj.block<3,6>(0,0);
+    Ce.block<3,6>(ce_padding+0,6) = -adj.block<3,6>(0,0);
+
     Ce(ce_padding+2,6*2) = -1;  // -normal
     for (int i=0; i<K; i++)
     {
@@ -425,6 +440,26 @@ void total_constraints(mjModel* m, mjData* d, std::vector<int>& robot_v_indices,
         {
             // robot: need to multiply by the inverse of jacobian
             // TODO
+            // assuming Mujoco jacobian is in the world coord system. 
+            // original constraint is: AV = 0.
+            // change to robot config, it is: AJq=0
+            double jacp[3*m->nv], jacr[3*m->nv];
+
+            mj_jacBody(m, d, jacp, jacr, contacts.contacts[i]->body_id1);
+            MatrixXd J_s(6,nq);  // in spatial frame assumed. Shape: 6xnv
+            for (int j=0; j<nq; j++)
+            {
+                J_s(0,j) = jacp[0*m->nv+robot_v_indices[j]];
+                J_s(1,j) = jacp[1*m->nv+robot_v_indices[j]];
+                J_s(2,j) = jacp[2*m->nv+robot_v_indices[j]];
+                J_s(3,j) = jacr[0*m->nv+robot_v_indices[j]];
+                J_s(4,j) = jacr[1*m->nv+robot_v_indices[j]];
+                J_s(5,j) = jacr[2*m->nv+robot_v_indices[j]];
+            }
+            std::cout << "Jacobian: " << std::endl;
+            std::cout << J_s << std::endl;
+            Ae.block(ae_offset, 0, ce_size, nq) = Ce.block(0, 0, ce_size, 6) * J_s;
+            Ai.block(ai_offset, 0, ci_size, nq) = Ci.block(0, 0, ci_size, 6) * J_s;
         }
 
         if (body_idx2 >= 0)
@@ -438,6 +473,23 @@ void total_constraints(mjModel* m, mjData* d, std::vector<int>& robot_v_indices,
         {
             // robot: need to multiply by the inverse of jacobian
             // TODO
+            double jacp[3*m->nv], jacr[3*m->nv];
+
+            mj_jacBody(m, d, jacp, jacr, contacts.contacts[i]->body_id2);
+            MatrixXd J_s(6,nq);  // in spatial frame assumed. Shape: 6xnv
+            for (int j=0; j<nq; j++)
+            {
+                J_s(0,j) = jacp[0*m->nv+robot_v_indices[j]];
+                J_s(1,j) = jacp[1*m->nv+robot_v_indices[j]];
+                J_s(2,j) = jacp[2*m->nv+robot_v_indices[j]];
+                J_s(3,j) = jacr[0*m->nv+robot_v_indices[j]];
+                J_s(4,j) = jacr[1*m->nv+robot_v_indices[j]];
+                J_s(5,j) = jacr[2*m->nv+robot_v_indices[j]];
+            }
+            std::cout << "Jacobian: " << std::endl;
+            std::cout << J_s << std::endl;
+            Ae.block(ae_offset, 0, ce_size, nq) = Ce.block(0, 6, ce_size, 6) * J_s;
+            Ai.block(ai_offset, 0, ci_size, nq) = Ci.block(0, 6, ci_size, 6) * J_s;
         }
 
 

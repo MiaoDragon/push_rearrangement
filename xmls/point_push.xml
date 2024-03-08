@@ -51,6 +51,7 @@
     </body>
 
     <body name="pointmass" pos="0.22 0 0.1" gravcomp="1">
+    <!-- <body name="pointmass" pos="0.7399660902822591 -0.00971188968363312 1.08" gravcomp="1"> -->
       <camera name="cam0" pos="0 -0.3 0.3" xyaxes="1 0 0 0 0.7 0.7"/>
       <joint name="root_x" type="slide"  pos="0 0 0" axis="1 0 0" />
       <joint name="root_y" type="slide"  pos="0 0 0" axis="0 1 0" />

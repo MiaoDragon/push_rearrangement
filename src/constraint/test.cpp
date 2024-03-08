@@ -20,6 +20,7 @@
 
 #include "../contact/contact.h"
 #include "constraint.h"
+#include "../utilities/eiquadprog.hpp"
 
 // MuJoCo data structures
 mjModel* m = NULL;                  // MuJoCo model
@@ -220,7 +221,6 @@ void test_total_constraint()
     ss_modes.push_back(ss_mode);
     }
 
-    std::vector<int> ss_mode = {0,0,0};
     MatrixXd Ce, Ci;
     VectorXd ce, ci;
     int ce_size, ci_size;
@@ -266,6 +266,11 @@ void test_total_constraint()
 
 }
 
+
+void test_solve_total_constraint()
+{
+
+}
 
 int main(void)
 {
