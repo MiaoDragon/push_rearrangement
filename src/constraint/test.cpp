@@ -2,6 +2,7 @@
 #include <Eigen/Geometry>
 #include <Eigen/Dense>
 #include <Eigen/Core>
+#include <cstddef>
 #include <mujoco/mjmodel.h>
 #include <mujoco/mjrender.h>
 #include <mujoco/mjtnum.h>
@@ -21,6 +22,8 @@
 #include "../contact/contact.h"
 #include "constraint.h"
 #include <eiquadprog/eiquadprog-fast.hpp>
+#include <eiquadprog/eiquadprog.hpp>
+
 
 // MuJoCo data structures
 mjModel* m = NULL;                  // MuJoCo model
@@ -152,14 +155,14 @@ void test_contact_constraint()
 
     }
 
-    std::vector<int> ss_mode = {0,0};
+    std::vector<int> ss_mode = {1,1};
     MatrixXd Ce, Ci;
     VectorXd ce, ci;
     int ce_size, ci_size;
     MatrixXd Fe1, Fe2, Te1, Te2;
     for (int i=0; i<contacts.contacts.size(); i++)
     {
-        contact_constraint(m, d, contacts.contacts[i], 1, ss_mode,
+        contact_constraint(m, d, contacts.contacts[i], 0, ss_mode,
                           Ce, ce, ce_size, Ci, ci, ci_size, Fe1, Fe2, Te1, Te2                        
         );
     }
@@ -262,6 +265,20 @@ void test_total_constraint()
     std::cout << Ai << std::endl;
     std::cout << "ai0: " << std::endl;
     std::cout << ai0 << std::endl;
+
+    MatrixXd G;
+    VectorXd g0;
+    std::vector<Vector6d> target_vs;
+    Vector6d target_v;
+    target_v.setRandom();
+    target_vs.push_back(target_v);
+
+    std::vector<int> active_vs;
+    active_vs.push_back(1);
+
+    std::cout << "target_v: " << std::endl;
+    std::cout << target_v << std::endl;
+    vel_objective(m, d, robot_v_indices, target_vs, active_vs, cs_modes.size(), ss_modes[0].size(), G, g0);
 
 
 }
@@ -382,6 +399,20 @@ void test_solve_total_constraint()
     // VectorXd ce0 = ae0;
     // MatrixXd Ci = Ai.transpose();
     // VectorXd ci0 = ai0;
+
+    std::vector<Vector6d> target_vs;
+    Vector6d target_v;
+    target_v.setRandom();
+    target_vs.push_back(target_v);
+
+    std::vector<int> active_vs;
+    active_vs.push_back(1);
+
+    std::cout << "target_v: " << std::endl;
+    std::cout << target_v << std::endl;
+    vel_objective(m, d, robot_v_indices, target_vs, active_vs, cs_modes.size(), ss_modes[0].size(), G, g0);
+
+
     VectorXd x = VectorXd::Zero(n_vars);
 
     // remove redundant constrs
@@ -400,6 +431,259 @@ void test_solve_total_constraint()
 
     std::cout << "solution: " << x << std::endl;
 
+}
+
+
+
+int test_solve_total_constraint_1(Vector3d& robot_pos)
+{
+
+    // // move the robot to the front of the object
+    // int obj_target_id = mj_name2id(m, mjOBJ_BODY, "object_0");
+    // Vector3d obj_target_pos;
+    // obj_target_pos[0] = d->xpos[3*obj_target_id];
+    // obj_target_pos[1] = d->xpos[3*obj_target_id+1];
+    // obj_target_pos[2] = d->xpos[3*obj_target_id+2];
+
+    // Vector3d obj_target_half_size(0.04, 0.1, 0.08);
+
+    // Vector3d robot_pos(obj_target_pos[0]-obj_target_half_size[0],obj_target_pos[1],obj_target_pos[2]-0.04);
+    int robot_bid = mj_name2id(m, mjOBJ_BODY, "pointmass");
+    std::cout << "joint number: " << m->body_jntnum[robot_bid] << std::endl;
+    int qadr1 = m->jnt_qposadr[m->body_jntadr[robot_bid]];
+    int qadr2 = m->jnt_qposadr[m->body_jntadr[robot_bid]+1];
+    int qadr3 = m->jnt_qposadr[m->body_jntadr[robot_bid]+2];
+
+
+    // int jnt_idx1 = mj_name2id(m, )
+
+    std::cout << "joint type: " << m->jnt_type[m->body_jntadr[robot_bid]] << std::endl;
+
+    d->qpos[qadr1] = robot_pos[0];
+    d->qpos[qadr2] = robot_pos[1];
+    d->qpos[qadr3] = robot_pos[2];
+    mj_forward(m, d);
+
+    // check robot position
+    std::cout << "Vector3d robot position: " << std::endl;
+    std::cout << robot_pos << std::endl;
+    std::cout << "robot position: " << d->xpos[robot_bid*3+0] << ", " <<
+                                       d->xpos[robot_bid*3+1] << ", " <<
+                                       d->xpos[robot_bid*3+2] << ", " <<
+                                       std::endl;
+
+    Contacts contacts(m, d);
+    std::vector<int> cs_modes;
+    std::vector<std::vector<int>> ss_modes;
+
+    // compare the values
+    for (int i=0; i<contacts.contacts.size(); i++)
+    {
+        std::cout << "Mujoco contact: " << std::endl;
+        std::cout << "body_id1: " << m->geom_bodyid[d->contact[i].geom1] << std::endl;
+        std::cout << "body_id2: " << m->geom_bodyid[d->contact[i].geom2] << std::endl;
+        std::cout << "body_type1: " << mj_id2name(m, mjOBJ_BODY, m->body_rootid[m->geom_bodyid[d->contact[i].geom1]]) << std::endl;
+        std::cout << "body_type1: " << mj_id2name(m, mjOBJ_BODY, m->body_rootid[m->geom_bodyid[d->contact[i].geom2]]) << std::endl;
+        std::cout << "pos: " << d->contact[i].pos[0] << "," <<
+                                d->contact[i].pos[1] << "," <<
+                                d->contact[i].pos[2] << std::endl;
+        std::cout << "frame: " << d->contact[i].frame[0] << "," <<
+                                  d->contact[i].frame[1] << "," <<
+                                  d->contact[i].frame[2] << "," <<
+                                  d->contact[i].frame[3] << "," <<
+                                  d->contact[i].frame[4] << "," <<
+                                  d->contact[i].frame[5] << "," <<
+                                  d->contact[i].frame[6] << "," <<
+                                  d->contact[i].frame[7] << "," <<
+                                  d->contact[i].frame[8] << std::endl;
+
+    cs_modes.push_back(0);
+
+    std::vector<int> ss_mode{0,0};
+    // for object and table contact, set ss_mode to be sliding along one axis.
+    if ((contacts.contacts[i]->body_type1 == BodyType::ENV) || (contacts.contacts[i]->body_type2 == BodyType::ENV))
+    {
+        ss_mode[0] = 1; ss_mode[1] = 1;
+    }
+
+    ss_modes.push_back(ss_mode);
+    }
+
+    MatrixXd Ce, Ci;
+    VectorXd ce, ci;
+    int ce_size, ci_size;
+    Eigen::Matrix<double, 3, 18> Fe1, Fe2, Te1, Te2;
+
+    std::vector<const char*> joint_names{"root_x",
+                                        "root_y",
+                                        "root_z"};
+    std::vector<int> robot_v_indices;
+    for (int i=0; i<joint_names.size(); i++)
+    {
+        int jnt_idx = mj_name2id(m, mjOBJ_JOINT, joint_names[i]);
+        robot_v_indices.push_back(m->jnt_dofadr[jnt_idx]);
+    }
+    int nobj = 1;
+    std::vector<int> obj_body_indices;
+    for (int i=0; i<nobj; i++)
+    {
+        char obj_name[20];
+        sprintf(obj_name, "object_%d", i);
+        std::cout << "object name: " << obj_name << std::endl;
+        obj_body_indices.push_back(mj_name2id(m, mjOBJ_BODY, obj_name));
+    }
+
+
+    MatrixXd Ae, Ai;
+    VectorXd ae0, ai0; 
+    int ae_size, ai_size;
+    total_constraints(m, d, robot_v_indices, obj_body_indices, contacts, cs_modes, ss_modes,
+                        Ae, ae0, ae_size, Ai, ai0, ai_size);
+
+
+    std::cout << "ae_size: " << ae_size << std::endl;
+    std::cout << "ai_size: " << ae_size << std::endl;
+    std::cout << "Ae: " << std::endl;
+    std::cout << Ae << std::endl;
+    std::cout << "ae0: " << std::endl;
+    std::cout << ae0 << std::endl;
+    std::cout << "Ai: " << std::endl;
+    std::cout << Ai << std::endl;
+    std::cout << "ai0: " << std::endl;
+    std::cout << ai0 << std::endl;
+
+
+    /**
+     * @brief Example of using the solver.
+        G << 2.1, 0.0, 1.0,
+            1.5, 2.2, 0.0,
+            1.2, 1.3, 3.1;
+
+        g0 << 6, 1, 1;
+
+        CE << 1, 2, -1;
+
+        ce0(0)=-4;
+
+        CI << 1, 0, 0, -1,
+                0, 1, 0, -1,
+                0, 0, 1,  0;
+
+
+        ci0 << 0, 0, 0, 10;
+
+
+        std::cout << "f: " << solve_quadprog(G, g0,  CE, ce0,  CI, ci0, x) << std::endl;
+        std::cout << "x: ";
+        for (int i = 0; i < x.size(); i++)
+            std::cout << x(i) << ' ';
+        std::cout << std::endl;     
+     * 
+     */
+
+    // decision varaible size: Ae.cols()
+    int n_vars = Ae.cols();
+    // MatrixXd G = MatrixXd::Zero(n_vars, n_vars);
+    MatrixXd G = MatrixXd::Identity(n_vars, n_vars);
+
+    VectorXd g0 = VectorXd::Zero(n_vars);
+    // MatrixXd Ce = Ae.transpose();
+    // VectorXd ce0 = ae0;
+    // MatrixXd Ci = Ai.transpose();
+    // VectorXd ci0 = ai0;
+
+    std::vector<Vector6d> target_vs;
+    Vector6d target_v;
+    // target_v.setRandom();
+    target_v << 0.1,0,0,0,0,0;
+    target_vs.push_back(target_v);
+
+    std::vector<int> active_vs;
+    active_vs.push_back(1);
+
+    std::cout << "target_v: " << std::endl;
+    std::cout << target_v << std::endl;
+    vel_objective(m, d, robot_v_indices, target_vs, active_vs, cs_modes.size(), ss_modes[0].size(), G, g0);
+
+
+    VectorXd x = VectorXd::Zero(n_vars);
+
+    // remove redundant constrs
+
+
+    remove_linear_redundant_constrs(Ae, ae0);
+
+    std::cout << "before solving..." << std::endl;
+    std::cout << "Ae: " << std::endl;
+    std::cout << Ae << std::endl;
+    std::cout << "ae0: " << std::endl;
+    std::cout << ae0 << std::endl;
+    std::cout << "Ai: " << std::endl;
+    std::cout << Ai << std::endl;
+    std::cout << "ai0: " << std::endl;
+    std::cout << ai0 << std::endl;
+
+    // std::cout << "before solving..." << std::endl;
+    // std::cout << "Ae: " << std::endl;
+    // std::cout << Ae << std::endl;
+    // std::cout << "ae0: " << std::endl;
+    // std::cout << ae0 << std::endl;
+    // std::cout << "Ai: " << std::endl;
+    // std::cout << Ai << std::endl;
+    // std::cout << "ai0: " << std::endl;
+    // std::cout << ai0 << std::endl;
+
+
+    eiquadprog::solvers::EiquadprogFast solver;
+    // VectorXi active_set(Ae.rows()+Ai.rows());
+    // size_t active_set_size = 0;
+
+    // double f = eiquadprog::solvers::solve_quadprog(G, g0, Ae.transpose(), ae0, Ai.transpose(), ai0, x, active_set, active_set_size);
+    int status = solver.solve_quadprog(G, g0, Ae, ae0, Ai, ai0, x);
+
+
+
+    // double f = Eigen::solve_quadprog(G, g0, Ae.transpose(), ae0, Ai.transpose(), ai0, x);
+    // std::cout << "f: " << f << std::endl;
+    // check the result: qdot, v1, v2, ..., vn, C1, C2, ...
+    // std::cout << "x: " << std::endl;
+    // std::cout << x << std::endl;
+    std::cout << "status: " << status << std::endl;
+    std::cout << "solution: " << x << std::endl;
+
+    return status;
+}
+
+void test_solve_total_constraint_1_loop()
+{
+    // move the robot to the front of the object
+    int obj_target_id = mj_name2id(m, mjOBJ_BODY, "object_0");
+    Vector3d obj_target_pos;
+    obj_target_pos[0] = d->xpos[3*obj_target_id];
+    obj_target_pos[1] = d->xpos[3*obj_target_id+1];
+    obj_target_pos[2] = d->xpos[3*obj_target_id+2];
+
+    Vector3d obj_target_half_size(0.04, 0.1, 0.08);
+
+    while (true)
+    {
+        // sample robot position until we find a solution
+        Vector3d ll(obj_target_pos[0], obj_target_pos[1]-0, obj_target_pos[2]-obj_target_half_size[2]);
+        Vector3d ul(obj_target_pos[0], obj_target_pos[1]+0, obj_target_pos[2]+obj_target_half_size[2]);
+
+        Vector3d res;
+        uniform_sample_3d(ll, ul, res);
+
+        int status = test_solve_total_constraint_1(res);
+
+        if (status == 0)
+        {
+            std::cout << "SUCCESS!" << std::endl;
+            std::cout << "robot position: " << std::endl;
+            std::cout << res << std::endl;
+            break;
+        }
+    }
 }
 
 int main(void)
@@ -481,7 +765,11 @@ int main(void)
 
     // test_contact_constraint();
     // test_total_constraint();
-    test_solve_total_constraint();
+    // test_solve_total_constraint();
+    // test_solve_total_constraint_1_loop();
+    Vector3d robot_pos(0.7399660902822591, -0.05971188968363312, 1.035);
+    test_solve_total_constraint_1(robot_pos);
+
 
     /* visualize the trajectory */
     while (!glfwWindowShouldClose(window))

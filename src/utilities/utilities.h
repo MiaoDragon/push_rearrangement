@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <iostream>
+#include <random>
 
 #include <Eigen/Geometry>
 #include <Eigen/Dense>
@@ -13,7 +14,10 @@
 
 
 typedef Eigen::Vector3d Vector3d;
+typedef Eigen::Vector<double, 6> Vector6d;
 typedef Eigen::VectorXd VectorXd;
+typedef Eigen::VectorXi VectorXi;
+
 typedef Eigen::Matrix3d Matrix3d;
 typedef Eigen::Matrix4d Matrix4d;
 typedef Eigen::Matrix<double, 6, 6> Matrix6d;
@@ -22,6 +26,7 @@ typedef Eigen::MatrixXd MatrixXd;
 
 void hat_operator(const Vector3d& a, Matrix3d& res)
 {
+    res.setZero();
     res(0,1) = -a(2); res(0,2) = a(1);
     res(1,0) = a(2);  res(1,2) = -a(0);
     res(2,0) = -a(1); res(2,1) = a(0);
@@ -42,6 +47,7 @@ void pos_mat_to_transform(double* pos, double* mat, Matrix4d& res)
 {
     // given position (3) and rotation matrix (9)
     // obtain transformation matrix
+    res.setZero();
     res(0,3) = pos[0]; res(1,3) = pos[1]; res(2,3) = pos[2];
     res(0,0) = mat[0]; res(0,1) = mat[1]; res(0,2) = mat[2];
     res(1,0) = mat[3]; res(1,1) = mat[4]; res(1,2) = mat[5];
@@ -68,6 +74,17 @@ void mj_to_transform(mjModel* m, mjData* d, int bid, Matrix4d& g)
     g(2,0) = d->xmat[bid*9+6]; g(2,1) = d->xmat[bid*9+7]; g(2,2) = d->xmat[bid*9+8];
 
     g(3,3) = 1;
+}
+
+/* sampling points on an object */
+void sample_point(mjModel* m, mjData* d, const int gid, Vector3d& pos)
+{
+    // sample points on the geom gid, and return the postiion as pos in the *world frame*
+    if (m->geom_type[gid] == mjGEOM_BOX)
+    {
+        // obtain each face
+
+    }
 }
 
 
@@ -185,8 +202,11 @@ void get_col_space_span(const MatrixXd& A, MatrixXd& res)
 {
     // given a matrix A, get the span for the col space of A
     // through QR decomposition
+    std::cout << "A: " << std::endl;
+    std::cout << A << std::endl;
     Eigen::ColPivHouseholderQR<MatrixXd> qr(A);  // AP = QR (P: permutation of cols of A)
     int rank = qr.rank();
+    std::cout << "rank: " << rank << std::endl;
     MatrixXd Q = qr.householderQ();
     // MatrixXd R = qr.matrixR().triangularView<Eigen::Upper>(); //qr.matrixR();
     // obtain the first "rank" columns of Q as the span of the col space of mat_interest
@@ -194,3 +214,20 @@ void get_col_space_span(const MatrixXd& A, MatrixXd& res)
     MatrixXd span = Q.block(0,0,Q.rows(),rank);
     res = span;
 }
+
+
+/* sampling distribution */
+void uniform_sample_3d(const Vector3d& ll, const Vector3d& ul, Vector3d& res)
+{
+    // Initialize random number generator
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
+    // randomly sample a vector uniformly in range [ll, ul]
+    for (int i=0; i<3; i++)
+    {
+        std::uniform_real_distribution<double> dis(ll[i], ul[i]);
+        res[i] = dis(gen);
+    }
+}
+// void uniform_samples(const VectorXd& ll, const VectorXd& ul,)

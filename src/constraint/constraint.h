@@ -57,11 +57,11 @@ void contact_constraint(mjModel* m, mjData* d, Contact* contact,
                         MatrixXd& Te1, MatrixXd& Te2)
 {
     int K = ss_mode.size();
-    Ce.resize(6+4*K,6+6+2+K*4);
-    Ci.resize(6+4*K,6+6+2+K*4);
+    Ce.resize(2*(6+4*K),6+6+2+K*4);
+    Ci.resize(2*(6+4*K),6+6+2+K*4);
     Ce.setZero(); Ci.setZero();
-    ce0.resize(6+4*K);
-    ci0.resize(6+4*K);
+    ce0.resize(2*(6+4*K));
+    ci0.resize(2*(6+4*K));
 
     Fe1.resize(3,6+6+2+K*4); Fe2.resize(3,6+6+2+K*4);
     Te1.resize(3,6+6+2+K*4); Te2.resize(3,6+6+2+K*4);
@@ -89,6 +89,8 @@ void contact_constraint(mjModel* m, mjData* d, Contact* contact,
     // obtain g1 in contact, g2 in contact
     Matrix4d cg1, cg2, wc, cw;
     pos_mat_to_transform(contact->pos, contact->frame, wc);
+    std::cout << "wc: " << std::endl;
+    std::cout << wc << std::endl;
     cw = wc.inverse();
 
     std::cout << "cw: " << std::endl;
@@ -151,6 +153,7 @@ void contact_constraint(mjModel* m, mjData* d, Contact* contact,
         Ce(ce_padding+1,6*2+1+K+i) = sin(M_PI/K*i);
     }
     ce_padding += 3;
+
 
     /* constraints according to cs mode */
     // - cs mode = 1: not in contact (or breaking contact)
@@ -274,7 +277,7 @@ void contact_constraint(mjModel* m, mjData* d, Contact* contact,
     // std::cout << "ce_size: " << ce_size << std::endl;
     // std::cout << "ci_size: " << ci_size << std::endl;
 
-
+    std::cout << "after adding contact matrix" << std::endl;
     Ce.conservativeResize(ce_size,6+6+2+K*4);  Ci.conservativeResize(ci_size,6+6+2+K*4);
     std::cout << "Ce: " << std::endl;
     std::cout << Ce << std::endl;
@@ -552,4 +555,53 @@ void total_constraints(mjModel* m, mjData* d, std::vector<int>& robot_v_indices,
     ae0.conservativeResize(ae_size);
     ai0.conservativeResize(ai_size);
 
+}
+
+/**
+ * @brief 
+ * objective: 0.5 x^TGx + g0^Tx
+ * equivalent: x^TGx + 2*g0^Tx
+ * vel objective:
+ * sum_i (v(i)-v_target(i))^2 + epsilon_lambda*(w(i)-w_target(i))^2 + epsilon_lambda(q^Tq + sum_i contact_i^Tcontact_i)
+ * @param m 
+ * @param d 
+ * @param robot_v_indices 
+ * @param obj_body_indices 
+ * @param G 
+ * @param g0 
+ */
+void vel_objective(mjModel* m, mjData* d, 
+                   std::vector<int>& robot_v_indices,
+                   std::vector<Vector6d>& target_vs,
+                   std::vector<int>& active_vs,  // if the vel is active
+                   const int ncon, const int K,  // K: ss mode
+                   MatrixXd& G, VectorXd& g0)
+{
+    double epsilon_w = 1, epsilon_lambda = 0.1;
+    int nq = robot_v_indices.size(), nobj = target_vs.size();
+    G.resize(nq+nobj*6+ncon*2*(1+2*K),nq+nobj*6+ncon*2*(1+2*K));
+    G.setZero();
+    g0.resize(nq+nobj*6+ncon*2*(1+2*K));
+    g0.setZero();
+    VectorXd G_diagonal(nq+nobj*6+ncon*2*(1+2*K));
+    G_diagonal.setZero();
+    // for each body, set the linear vel part of G to be one
+    for (int i=0; i<nobj; i++)
+    {
+        // if not active, then ignore
+        if (active_vs[i] == 0) continue;
+        G_diagonal.segment(nq+i*6,3).setOnes();
+        G_diagonal.segment(nq+i*6+3,3).setConstant(epsilon_w);
+        g0.segment(nq+i*6,3) = -target_vs[i].head(3);
+        g0.segment(nq+i*6+3,3) = -epsilon_w*target_vs[i].tail(3);
+    }
+    // add obj for q, contacts
+    G_diagonal.segment(0,nq).setConstant(epsilon_lambda);
+    G_diagonal.tail(ncon*2*(1+2*K)).setConstant(epsilon_lambda);
+    G.diagonal() = G_diagonal;
+
+    std::cout << "G: " << std::endl;
+    std::cout << G << std::endl;
+    std::cout << "g0: " << std::endl;
+    std::cout << g0 << std::endl;
 }
