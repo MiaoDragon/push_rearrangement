@@ -3,6 +3,7 @@ find_package(Eigen3 REQUIRED)
 set(example_required_libraries 
     "${mujoco_LIBRARIES}"
     "glfw"
+    "eiquadprog"
     )
 
 set(example_include_dirs 

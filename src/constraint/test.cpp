@@ -20,7 +20,7 @@
 
 #include "../contact/contact.h"
 #include "constraint.h"
-#include "../utilities/eiquadprog.hpp"
+#include <eiquadprog/eiquadprog-fast.hpp>
 
 // MuJoCo data structures
 mjModel* m = NULL;                  // MuJoCo model
@@ -270,6 +270,136 @@ void test_total_constraint()
 void test_solve_total_constraint()
 {
 
+    Contacts contacts(m, d);
+    std::vector<int> cs_modes;
+    std::vector<std::vector<int>> ss_modes;
+
+    // compare the values
+    for (int i=0; i<contacts.contacts.size(); i++)
+    {
+        std::cout << "Mujoco contact: " << std::endl;
+        std::cout << "body_id1: " << m->geom_bodyid[d->contact[i].geom1] << std::endl;
+        std::cout << "body_id2: " << m->geom_bodyid[d->contact[i].geom2] << std::endl;
+        std::cout << "body_type1: " << mj_id2name(m, mjOBJ_BODY, m->body_rootid[m->geom_bodyid[d->contact[i].geom1]]) << std::endl;
+        std::cout << "body_type1: " << mj_id2name(m, mjOBJ_BODY, m->body_rootid[m->geom_bodyid[d->contact[i].geom2]]) << std::endl;
+        std::cout << "pos: " << d->contact[i].pos[0] << "," <<
+                                d->contact[i].pos[1] << "," <<
+                                d->contact[i].pos[2] << std::endl;
+        std::cout << "frame: " << d->contact[i].frame[0] << "," <<
+                                  d->contact[i].frame[1] << "," <<
+                                  d->contact[i].frame[2] << "," <<
+                                  d->contact[i].frame[3] << "," <<
+                                  d->contact[i].frame[4] << "," <<
+                                  d->contact[i].frame[5] << "," <<
+                                  d->contact[i].frame[6] << "," <<
+                                  d->contact[i].frame[7] << "," <<
+                                  d->contact[i].frame[8] << std::endl;
+
+    cs_modes.push_back(0);
+    std::vector<int> ss_mode{0,0};
+    ss_modes.push_back(ss_mode);
+    }
+
+    MatrixXd Ce, Ci;
+    VectorXd ce, ci;
+    int ce_size, ci_size;
+    Eigen::Matrix<double, 3, 18> Fe1, Fe2, Te1, Te2;
+
+    std::vector<const char*> joint_names{"root_x",
+                                        "root_y",
+                                        "root_z"};
+    std::vector<int> robot_v_indices;
+    for (int i=0; i<joint_names.size(); i++)
+    {
+        int jnt_idx = mj_name2id(m, mjOBJ_JOINT, joint_names[i]);
+        robot_v_indices.push_back(m->jnt_dofadr[jnt_idx]);
+    }
+    int nobj = 1;
+    std::vector<int> obj_body_indices;
+    for (int i=0; i<nobj; i++)
+    {
+        char obj_name[20];
+        sprintf(obj_name, "object_%d", i);
+        std::cout << "object name: " << obj_name << std::endl;
+        obj_body_indices.push_back(mj_name2id(m, mjOBJ_BODY, obj_name));
+    }
+
+
+    MatrixXd Ae, Ai;
+    VectorXd ae0, ai0; 
+    int ae_size, ai_size;
+    total_constraints(m, d, robot_v_indices, obj_body_indices, contacts, cs_modes, ss_modes,
+                        Ae, ae0, ae_size, Ai, ai0, ai_size);
+
+
+    std::cout << "ae_size: " << ae_size << std::endl;
+    std::cout << "ai_size: " << ae_size << std::endl;
+    std::cout << "Ae: " << std::endl;
+    std::cout << Ae << std::endl;
+    std::cout << "ae0: " << std::endl;
+    std::cout << ae0 << std::endl;
+    std::cout << "Ai: " << std::endl;
+    std::cout << Ai << std::endl;
+    std::cout << "ai0: " << std::endl;
+    std::cout << ai0 << std::endl;
+
+
+    /**
+     * @brief Example of using the solver.
+        G << 2.1, 0.0, 1.0,
+            1.5, 2.2, 0.0,
+            1.2, 1.3, 3.1;
+
+        g0 << 6, 1, 1;
+
+        CE << 1, 2, -1;
+
+        ce0(0)=-4;
+
+        CI << 1, 0, 0, -1,
+                0, 1, 0, -1,
+                0, 0, 1,  0;
+
+
+        ci0 << 0, 0, 0, 10;
+
+
+        std::cout << "f: " << solve_quadprog(G, g0,  CE, ce0,  CI, ci0, x) << std::endl;
+        std::cout << "x: ";
+        for (int i = 0; i < x.size(); i++)
+            std::cout << x(i) << ' ';
+        std::cout << std::endl;     
+     * 
+     */
+
+    // decision varaible size: Ae.cols()
+    int n_vars = Ae.cols();
+    // MatrixXd G = MatrixXd::Zero(n_vars, n_vars);
+    MatrixXd G = MatrixXd::Identity(n_vars, n_vars);
+
+    VectorXd g0 = VectorXd::Zero(n_vars);
+    // MatrixXd Ce = Ae.transpose();
+    // VectorXd ce0 = ae0;
+    // MatrixXd Ci = Ai.transpose();
+    // VectorXd ci0 = ai0;
+    VectorXd x = VectorXd::Zero(n_vars);
+
+    // remove redundant constrs
+    remove_linear_redundant_constrs(Ae, ae0);
+    // remove_linear_redundant_constrs(Ai, ai0);
+
+    eiquadprog::solvers::EiquadprogFast solver;
+    int status = solver.solve_quadprog(G, g0, Ae, ae0, Ai, ai0, x);
+
+    // double f = Eigen::solve_quadprog(G, g0, Ae.transpose(), ae0, Ai.transpose(), ai0, x);
+    // std::cout << "f: " << f << std::endl;
+    // check the result: qdot, v1, v2, ..., vn, C1, C2, ...
+    // std::cout << "x: " << std::endl;
+    // std::cout << x << std::endl;
+    std::cout << "status: " << status << std::endl;
+
+    std::cout << "solution: " << x << std::endl;
+
 }
 
 int main(void)
@@ -347,10 +477,11 @@ int main(void)
 
 
     mj_forward(m, d);
+    for (int i=0; i<10; i++) mj_step(m, d);  // try to stablize
 
     // test_contact_constraint();
-    test_total_constraint();
-
+    // test_total_constraint();
+    test_solve_total_constraint();
 
     /* visualize the trajectory */
     while (!glfwWindowShouldClose(window))

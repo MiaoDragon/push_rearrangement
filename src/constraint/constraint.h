@@ -46,7 +46,7 @@
  * 
  * ss_mode refers to the tangent polyhedron approx to the friction cone
  * @param contact 
- * @param cs_mode 
+ * @param cs_mode: 1 means NOT in contact. 0 means in contact.
  * @param ss_mode 
  */
 void contact_constraint(mjModel* m, mjData* d, Contact* contact, 
@@ -321,6 +321,8 @@ void contact_constraint(mjModel* m, mjData* d, Contact* contact,
     r[0] = wc(0,3) - d->xipos[contact->body_id1*3+0];
     r[1] = wc(1,3) - d->xipos[contact->body_id1*3+1];
     r[2] = wc(2,3) - d->xipos[contact->body_id1*3+2];
+    std::cout << "body 1, r: " << std::endl;
+    std::cout << r << std::endl;
 
     Matrix3d r_hat;
     hat_operator(r, r_hat);
@@ -335,6 +337,13 @@ void contact_constraint(mjModel* m, mjData* d, Contact* contact,
     }
 
     // for body2, force is (c_f_c^b)
+    r[0] = wc(0,3) - d->xipos[contact->body_id2*3+0];
+    r[1] = wc(1,3) - d->xipos[contact->body_id2*3+1];
+    r[2] = wc(2,3) - d->xipos[contact->body_id2*3+2];
+    hat_operator(r, r_hat);
+    std::cout << "body 2, r: " << std::endl;
+    std::cout << r << std::endl;
+
     axis[0] = 0; axis[1] = 0; axis[2] = 1;
     Te2.block<3,1>(0,2*6+1+K*2) = r_hat * wRc * axis;
     for (int i=0; i<K; i++)
