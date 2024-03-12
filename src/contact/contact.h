@@ -43,6 +43,8 @@ struct Contact
         frame[3] = frame_[4]; frame[4] = frame_[7]; frame[5] = frame_[1];
         frame[6] = frame_[5]; frame[7] = frame_[8]; frame[8] = frame_[2];
 
+        pos_mat_to_transform(pos, frame, eigen_frame);
+        eigen_pos = eigen_frame.block<3,1>(0,3);
     }
 
     int body_id1;
@@ -60,6 +62,8 @@ struct Contact
      * so that the z-axis is the normal vector.
      * our frame relative to the Mujoco one is [y,z,x]
     */
+    Vector3d eigen_pos;
+    Matrix4d eigen_frame;
 
     double mu = 1.0;  // friction coeff
 };

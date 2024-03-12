@@ -23,6 +23,9 @@ typedef Eigen::Matrix4d Matrix4d;
 typedef Eigen::Matrix<double, 6, 6> Matrix6d;
 typedef Eigen::MatrixXd MatrixXd;
 
+typedef Eigen::Quaterniond Quaterniond;
+typedef Eigen::AngleAxisd AngleAxisd;
+
 
 void hat_operator(const Vector3d& a, Matrix3d& res)
 {
@@ -55,6 +58,54 @@ void pos_mat_to_transform(double* pos, double* mat, Matrix4d& res)
     res(3,3) = 1;
 }
 
+void pos_rot_to_transform(const Vector3d& pos, const Quaterniond& ori, Matrix4d& res)
+{
+    res.setZero();
+    res.block<3,3>(0,0) = ori.toRotationMatrix();
+    res(3,3) = 1;
+    res.block<3,1>(0,3) = pos;
+}
+
+void rot_to_axis_angle(const Matrix3d& transform, double& angle, Vector3d& axis)
+{
+    AngleAxisd axis_angle(transform);
+    if (axis_angle.angle() < 0)
+    {
+        angle = -axis_angle.angle();
+        axis = -axis_angle.axis();
+    }
+    else
+    {
+        angle = axis_angle.angle();
+        axis = axis_angle.axis();
+    }
+}
+
+
+void pose_to_transform(const Matrix4d& start_T, const Matrix4d& goal_T,
+                       Vector3d& pos, double& angle, Vector3d& axis)
+{
+    /* obtain the vel from start to goal, expressed in the world frame */
+    // R(vel*dt) * start_T = goal_T
+    Matrix4d dT = goal_T * start_T.inverse();
+    // make sure bounds on vel are met
+    pos = dT.block<3,1>(0,3);
+    double angle;
+    Vector3d axis;
+    rot_to_axis_angle(dT.block<3,3>(0,0), angle, axis);
+}
+
+void pose_to_transform(const Vector3d& start_p, const Quaterniond& start_r,
+                       const Vector3d& goal_p, const Quaterniond& goal_r,
+                       Vector3d& pos, double& angle, Vector3d& axis)
+{
+    /* obtain the vel from start to goal, expressed in the world frame */
+    // R(vel*dt) * start_T = goal_T
+    Matrix4d start_T, goal_T;
+    pos_rot_to_transform(start_p, start_r, start_T);
+    pos_rot_to_transform(goal_p, goal_r, goal_T);
+    pose_to_transform(start_T, goal_T, pos, angle, axis);
+}
 
 
 /*****************************************************/
@@ -143,6 +194,80 @@ void remove_linear_redundant_constrs(Eigen::MatrixXd& A, Eigen::VectorXd& b)
 }
 
 
+/**
+ * @brief 
+ * 
+ * TODO: unit test
+ * @param ang_in 
+ * @param n_ss_mode 
+ * @param ss_mode 
+ */
+
+void ang_to_ss_mode(const double ang_in, const int n_ss_mode,
+                    std::vector<int>& ss_mode)
+{
+    ss_mode.resize(n_ss_mode);
+    for (int i=0; i<ss_mode.size(); i++) ss_mode[i] = 0;
+
+    // decide on axis. the region is pi/Nc. index in [0,2Nc)
+    // obtain the angle of vel
+    double ang = ang_in % (2*M_PI);
+    // [-pi, pi] -> [0,2pi]
+    double ss_ang = M_PI / ss_mode.size();
+    // first idx
+    int axis0 = ang / (ss_ang);
+    int idx0 = axis0 / ss_mode.size();
+    int sign0 = 1;
+    if (idx0 == 1) sign0 = -1;
+    axis0 = axis0 % (ss_mode.size());
+
+    // second idx
+    int axis1 = ang / (ss_ang) + 1;
+    axis1 = axis1 % (2*ss_mode.size());
+    idx1 = axis1 / ss_mode.size();
+    int sign1 = 1;
+    if (idx1 == 1) sign1 = -1;
+    axis1 = axis1 % (ss_mode.size());
+
+    ss_mode[axis0] = sign0;  ss_mode[axis1] = sign1;
+}
+
+
+void vel_to_contact_mode(const Contact* contact,
+                         const Vector6d& twist1, const Vector6d& twist2,
+                         const int n_ss_mode,
+                         int& cs_mode, std::vector<int>& ss_mode)
+{
+    // if the contact is obj with workspace, then set cs modes and ss modes
+    if (((contact->body_type1 == BodyType::OBJECT) && (contact->body_type2 == BodyType::ENV)) ||
+        ((contact->body_type1 == BodyType::ENV) && (contact->body_type2 == BodyType::OBJECT)))
+    {
+        Vector6d twist = twist1 - twist2; // the relative twist in the world frame
+        // since the relative twist is in the world frame, the relative vel at the contact point is:
+        // w_omega cross g_wc + w_v
+        Vector3d w_vel = twist.head<3>() + twist.tail<3>().cross(contact->eigen_pos);
+        // obtain the velocity in the contact frame. g_cw * w_vel
+        Vector3d c_vel = contact->eigen_frame.inverse() * w_vel;
+        ang_to_ss_mode(std::atan2(c_vel[1], c_vel[0]), n_ss_mode, ss_mode);
+
+        cs_mode = 0;
+        return;
+    }
+    // TODO: obj-obj case?
+
+    ss_mode.resize(n_ss_mode);
+    for (int i=0; i<ss_mode.size(); i++) ss_mode[i] = 0;
+    // robot-obj case: cs_mode = 0, ss_mode=sticking
+    if (((contact->body_type1 == BodyType::ROBOT) && (contact->body_type2 == BodyType::OBJECT)) ||
+        ((contact->body_type1 == BodyType::OBJECT) && (contact->body_type2 == BodyType::ROBOT)))
+    {
+        cs_mode = 0;
+    }    
+
+    // otherwise cs_mode = 1
+    cs_mode = 1;
+
+}
 
 /*****************************************************/
 /****************** handling Eigen  ******************/
