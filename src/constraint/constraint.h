@@ -50,11 +50,11 @@
  * @param ss_mode 
  */
 void contact_constraint(mjModel* m, mjData* d, Contact* contact, 
-                        const int cs_mode, const std::vector<int> ss_mode,
-                        MatrixXd& Ce, VectorXd& ce0, int& ce_size,
-                        MatrixXd& Ci, VectorXd& ci0, int& ci_size,
-                        MatrixXd& Fe1, MatrixXd& Fe2,
-                        MatrixXd& Te1, MatrixXd& Te2)
+                             const int cs_mode, const std::vector<int> ss_mode,
+                             MatrixXd& Ce, VectorXd& ce0, int& ce_size,
+                             MatrixXd& Ci, VectorXd& ci0, int& ci_size,
+                             MatrixXd& Fe1, MatrixXd& Fe2,
+                             MatrixXd& Te1, MatrixXd& Te2)
 {
     int K = ss_mode.size();
     Ce.resize(2*(6+4*K),6+6+2+K*4);
@@ -100,8 +100,8 @@ void contact_constraint(mjModel* m, mjData* d, Contact* contact,
 
     int ce_padding = 0, ci_padding = 0;  // to record how many constraints we have
 
-    /* vn >= 0, v_tk >= 0, v_tk' >= 0, fn >= 0, f_ti >= 0, f_ti' >= 0*/
-    Ci(ci_padding+0, 6*2) = 1;  ci_padding += 1;
+    /* vn *<=* 0, v_tk >= 0, v_tk' >= 0, fn >= 0, f_ti >= 0, f_ti' >= 0*/
+    Ci(ci_padding+0, 6*2) = -1;  ci_padding += 1;
     for (int i=0; i<K; i++)
     {
         Ci(ci_padding+0, 6*2+1+i) = 1;  ci_padding += 1;
@@ -182,12 +182,20 @@ void contact_constraint(mjModel* m, mjData* d, Contact* contact,
         // number of ss mode partition the space into 2*K regions
         // assuming the i-th one is [cos(180/K*i), sin(180/K*i), 0]
         // - sticking: vt = 0 (v_t1=0,...)    (could also use below ones)
-        //   sum_i ft_i <= mu (inside polyhedral cone)
+        //   sum_i ft_i <= mu*fn (inside polyhedral cone)
  
-        // - ss_mode[i] = +1: vt dot axis[i] >= 0, ft dot axis[i] <= 0
+        // - ss_mode[i] = +1: vt dot axis[i] >= 0, ft dot axis[i] >= 0  (all is body1 -> body2)
         // - ss_mode[i] = 0: vt dot axis[i] = 0, ft dot axis[i] = 0
-        // - ss_mode[i] = -1: vt dot axis[i] <= 0, ft dot axis[i] >= 0
-        // - sliding: sum(ft dot g(axis[i])) = mu. 
+        // - ss_mode[i] = -1: vt dot axis[i] <= 0, ft dot axis[i] <= 0
+        // - sliding: sum(ft_i^+) + sum(ft_i^-) = mu*fn. 
+
+        /**
+         * @brief 
+         * NOTE:
+         * body 1 relative to body 2 is in tangent vel dir 1, then body1 experiences
+         * friction force from body 2 in the opposite dir of 1. But body 2 experiences
+         * friction force in the same direction as dir 1.
+         */
         bool is_sticking = true;
         for (int i=0; i<ss_mode.size(); i++)
         {
@@ -216,9 +224,9 @@ void contact_constraint(mjModel* m, mjData* d, Contact* contact,
             // => sum_i f_ti + sum_i f_ti' - mu*f_n <= 0
             // => sum_i -f_ti + sum_i -f_ti' + mu*f_n >= 0
 
+            Ci(ci_padding+0, 2*6+1+2*K) = contact->mu;
             for (int i=0; i<ss_mode.size(); i++)
             {
-                Ci(ci_padding+0, 2*6+1+2*K) = contact->mu;
                 Ci(ci_padding+0, 2*6+1+2*K+1+i) = -1;
                 Ci(ci_padding+0, 2*6+1+2*K+1+K+i) = -1;
             }
@@ -241,20 +249,20 @@ void contact_constraint(mjModel* m, mjData* d, Contact* contact,
                 if (ss_mode[i] == 1)
                 {
                     // v_ti >= 0, v_ti' = 0
-                    // f_ti' >= 0, f_ti = 0
+                    // f_ti >= 0, f_ti' = 0
                     Ci(ci_padding+0,6*2+1+i) = 1; ci_padding += 1;
-                    Ci(ci_padding+0,6*2+1+2*K+1+K+i) = 1; ci_padding += 1;
+                    Ci(ci_padding+0,6*2+1+2*K+1+i) = 1; ci_padding += 1;
                     Ce(ce_padding+0,6*2+1+K+i) = 1; ce_padding += 1;
-                    Ce(ce_padding+0,6*2+1+2*K+1+i) = 1; ce_padding += 1;
+                    Ce(ce_padding+0,6*2+1+2*K+1+K+i) = 1; ce_padding += 1;
                 }
                 else if (ss_mode[i] == -1)
                 {
-                    // v_ti' >= 0, f_ti >= 0
-                    // v_ti = 0, f_ti' = 0
+                    // v_ti' >= 0, f_ti' >= 0
+                    // v_ti = 0, f_ti = 0
                     Ci(ci_padding+0,6*2+1+K+i) = 1; ci_padding += 1;
-                    Ci(ci_padding+0,6*2+1+2*K+1+i) = 1; ci_padding += 1;
+                    Ci(ci_padding+0,6*2+1+2*K+1+K+i) = 1; ci_padding += 1;
                     Ce(ce_padding+0,6*2+1+i) = 1; ce_padding += 1;
-                    Ce(ce_padding+0,6*2+1+2*K+1+K+i) = 1; ce_padding = 1;
+                    Ce(ce_padding+0,6*2+1+2*K+1+i) = 1; ce_padding = 1;
                 }
                 else if (ss_mode[i] == 0)
                 {
@@ -554,7 +562,6 @@ void total_constraints(mjModel* m, mjData* d, std::vector<int>& robot_v_indices,
     Ai.conservativeResize(ai_size,nq+nobj*6+ncon*2*(1+2*K));
     ae0.conservativeResize(ae_size);
     ai0.conservativeResize(ai_size);
-
 }
 
 /**
@@ -577,7 +584,7 @@ void vel_objective(mjModel* m, mjData* d,
                    const int ncon, const int K,  // K: ss mode
                    MatrixXd& G, VectorXd& g0)
 {
-    double epsilon_w = 1, epsilon_lambda = 0.1;
+    double epsilon_w = 1, epsilon_lambda = 1e-4;
     int nq = robot_v_indices.size(), nobj = target_vs.size();
     G.resize(nq+nobj*6+ncon*2*(1+2*K),nq+nobj*6+ncon*2*(1+2*K));
     G.setZero();
@@ -596,6 +603,7 @@ void vel_objective(mjModel* m, mjData* d,
         g0.segment(nq+i*6+3,3) = -epsilon_w*target_vs[i].tail(3);
     }
     // add obj for q, contacts
+    // NOTE: need to make sure G is PD
     G_diagonal.segment(0,nq).setConstant(epsilon_lambda);
     G_diagonal.tail(ncon*2*(1+2*K)).setConstant(epsilon_lambda);
     G.diagonal() = G_diagonal;

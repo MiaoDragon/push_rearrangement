@@ -38,5 +38,7 @@ add_library(push-mpc-utils
     )
 
 add_executable(utility_test test.cpp)
+add_executable(screw_test test2.cpp)
+
 
 set_target_properties(push-mpc-utils PROPERTIES LINKER_LANGUAGE CXX)

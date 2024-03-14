@@ -142,3 +142,83 @@ struct Contacts
 
     std::vector<Contact*> contacts;
 };
+
+/**
+ * @brief 
+ * 
+ * TODO: unit test
+ * @param ang_in 
+ * @param n_ss_mode 
+ * @param ss_mode 
+ */
+
+void ang_to_ss_mode(const double ang_in, const int n_ss_mode,
+                    std::vector<int>& ss_mode)
+{
+    ss_mode.resize(n_ss_mode);
+    for (int i=0; i<ss_mode.size(); i++) ss_mode[i] = 0;
+
+    // decide on axis. the region is pi/Nc. index in [0,2Nc)
+    // obtain the angle of vel
+    double ang = std::fmod(ang_in, 2*M_PI);
+    if (ang < 0) ang += 2*M_PI;
+
+    // double ang = ang_in % (2*M_PI);
+    // [-pi, pi] -> [0,2pi]
+    double ss_ang = M_PI / ss_mode.size();
+    // first idx
+    int axis0 = ang / (ss_ang);
+    int idx0 = axis0 / ss_mode.size();
+    int sign0 = 1;
+    if (idx0 == 1) sign0 = -1;
+    axis0 = axis0 % (ss_mode.size());
+
+
+    // second idx
+    int axis1 = ang / (ss_ang) + 1;
+    axis1 = axis1 % (2*ss_mode.size());
+    int idx1 = axis1 / ss_mode.size();
+    int sign1 = 1;
+    if (idx1 == 1) sign1 = -1;
+    axis1 = axis1 % (ss_mode.size());
+
+
+    ss_mode[axis0] = sign0;  ss_mode[axis1] = sign1;
+}
+
+
+void vel_to_contact_mode(const Contact* contact,
+                         const Vector6d& twist1, const Vector6d& twist2,
+                         const int n_ss_mode,
+                         int& cs_mode, std::vector<int>& ss_mode)
+{
+    // if the contact is obj with workspace, then set cs modes and ss modes
+    if (((contact->body_type1 == BodyType::OBJECT) && (contact->body_type2 == BodyType::ENV)) ||
+        ((contact->body_type1 == BodyType::ENV) && (contact->body_type2 == BodyType::OBJECT)))
+    {
+        Vector6d twist = twist1 - twist2; // the relative twist in the world frame
+        // since the relative twist is in the world frame, the relative vel at the contact point is:
+        // w_omega cross g_wc + w_v
+        Vector3d w_vel = twist.head<3>() + twist.tail<3>().cross(contact->eigen_pos);
+        // obtain the velocity in the contact frame. g_cw * w_vel
+        Vector3d c_vel = contact->eigen_frame.inverse().block<3,3>(0,0) * w_vel;
+        ang_to_ss_mode(std::atan2(c_vel[1], c_vel[0]), n_ss_mode, ss_mode);
+
+        cs_mode = 0;
+        return;
+    }
+    // TODO: obj-obj case?
+
+    ss_mode.resize(n_ss_mode);
+    for (int i=0; i<ss_mode.size(); i++) ss_mode[i] = 0;
+    // robot-obj case: cs_mode = 0, ss_mode=sticking
+    if (((contact->body_type1 == BodyType::ROBOT) && (contact->body_type2 == BodyType::OBJECT)) ||
+        ((contact->body_type1 == BodyType::OBJECT) && (contact->body_type2 == BodyType::ROBOT)))
+    {
+        cs_mode = 0;
+        return;
+    }    
+
+    // otherwise cs_mode = 1
+    cs_mode = 1;
+}

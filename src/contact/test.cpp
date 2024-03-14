@@ -4,6 +4,7 @@
 #include <Eigen/Geometry>
 #include <Eigen/Dense>
 #include <Eigen/Core>
+#include <cmath>
 #include <mujoco/mjmodel.h>
 #include <mujoco/mjrender.h>
 #include <mujoco/mjtnum.h>
@@ -154,6 +155,83 @@ void test_contact()
 }
 
 
+void test_ss_mode()
+{
+    double ang = 0;
+    int n_ss_mode = 2;
+    std::vector<int> ss_mode;
+
+    ang = 30.0;
+    ang_to_ss_mode(ang/180*M_PI, n_ss_mode, ss_mode);
+    std::cout << "ang: " << ang << std::endl;
+    std::cout << "ss_mode: " << std::endl;
+    for (int i = 0; i<n_ss_mode; i++) std::cout << ss_mode[i] << ", " << std::endl;
+
+    ang = 60.0;
+    ang_to_ss_mode(ang/180*M_PI, n_ss_mode, ss_mode);
+    std::cout << "ang: " << ang << std::endl;
+    std::cout << "ss_mode: " << std::endl;
+    for (int i = 0; i<n_ss_mode; i++) std::cout << ss_mode[i] << ", " << std::endl;
+
+    ang = 120.0;
+    ang_to_ss_mode(ang/180*M_PI, n_ss_mode, ss_mode);
+    std::cout << "ang: " << ang << std::endl;
+    std::cout << "ss_mode: " << std::endl;
+    for (int i = 0; i<n_ss_mode; i++) std::cout << ss_mode[i] << ", " << std::endl;
+
+    ang = 200.0;
+    ang_to_ss_mode(ang/180*M_PI, n_ss_mode, ss_mode);
+    std::cout << "ang: " << ang << std::endl;
+    std::cout << "ss_mode: " << std::endl;
+    for (int i = 0; i<n_ss_mode; i++) std::cout << ss_mode[i] << ", " << std::endl;
+
+    ang = 300.0;
+    ang_to_ss_mode(ang/180*M_PI, n_ss_mode, ss_mode);
+    std::cout << "ang: " << ang << std::endl;
+    std::cout << "ss_mode: " << std::endl;
+    for (int i = 0; i<n_ss_mode; i++) std::cout << ss_mode[i] << ", " << std::endl;
+
+
+    n_ss_mode = 3;
+    ang = 30.0;
+    ang_to_ss_mode(ang/180*M_PI, n_ss_mode, ss_mode);
+    std::cout << "ang: " << ang << std::endl;
+    std::cout << "ss_mode: " << std::endl;
+    for (int i = 0; i<n_ss_mode; i++) std::cout << ss_mode[i] << ", " << std::endl;
+
+    ang = 100.0;
+    ang_to_ss_mode(ang/180*M_PI, n_ss_mode, ss_mode);
+    std::cout << "ang: " << ang << std::endl;
+    std::cout << "ss_mode: " << std::endl;
+    for (int i = 0; i<n_ss_mode; i++) std::cout << ss_mode[i] << ", " << std::endl;
+
+    ang = 150.0;
+    ang_to_ss_mode(ang/180*M_PI, n_ss_mode, ss_mode);
+    std::cout << "ang: " << ang << std::endl;
+    std::cout << "ss_mode: " << std::endl;
+    for (int i = 0; i<n_ss_mode; i++) std::cout << ss_mode[i] << ", " << std::endl;
+
+
+    ang = 200.0;
+    ang_to_ss_mode(ang/180*M_PI, n_ss_mode, ss_mode);
+    std::cout << "ang: " << ang << std::endl;
+    std::cout << "ss_mode: " << std::endl;
+    for (int i = 0; i<n_ss_mode; i++) std::cout << ss_mode[i] << ", " << std::endl;
+
+    ang = 280.0;
+    ang_to_ss_mode(ang/180*M_PI, n_ss_mode, ss_mode);
+    std::cout << "ang: " << ang << std::endl;
+    std::cout << "ss_mode: " << std::endl;
+    for (int i = 0; i<n_ss_mode; i++) std::cout << ss_mode[i] << ", " << std::endl;
+
+    ang = 320.0;
+    ang_to_ss_mode(ang/180*M_PI, n_ss_mode, ss_mode);
+    std::cout << "ang: " << ang << std::endl;
+    std::cout << "ss_mode: " << std::endl;
+    for (int i = 0; i<n_ss_mode; i++) std::cout << ss_mode[i] << ", " << std::endl;
+
+}
+
 
 int main(void)
 {
@@ -233,6 +311,7 @@ int main(void)
 
     test_contact();
 
+    test_ss_mode();
 
     /* visualize the trajectory */
     while (!glfwWindowShouldClose(window))

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <vector>
 #include <iostream>
 #include <random>
@@ -33,6 +34,31 @@ void hat_operator(const Vector3d& a, Matrix3d& res)
     res(0,1) = -a(2); res(0,2) = a(1);
     res(1,0) = a(2);  res(1,2) = -a(0);
     res(2,0) = -a(1); res(2,1) = a(0);
+}
+
+void hat_operator(const Vector6d& a, Matrix4d& res)
+/* a = [v,w] */
+{
+    res.setZero();
+
+    Matrix3d R;
+    hat_operator(a.tail(3), R);
+    res.block<3,3>(0,0) = R;
+    res.block<3,1>(0,3) = a.head(3);
+}
+
+void vee_operator(const Matrix3d& so3, Vector3d& res)
+{
+    res[0] = so3(2,1); res[1] = so3(0,2); res[2] = so3(1,0);
+}
+
+void vee_operator(const Matrix4d& se3, Vector6d &res)
+/* se3 = [v,w]_x */
+{
+    Vector3d w;
+    vee_operator(se3.block<3,3>(0,0), w);
+    res.tail(3) = w;
+    res.head(3) = se3.block<3,1>(0,3);
 }
 
 void adjoint(Matrix4d& g, Matrix6d& res)
@@ -82,29 +108,116 @@ void rot_to_axis_angle(const Matrix3d& transform, double& angle, Vector3d& axis)
 }
 
 
-void pose_to_transform(const Matrix4d& start_T, const Matrix4d& goal_T,
-                       Vector3d& pos, double& angle, Vector3d& axis)
+void so3_to_SO3(const Matrix3d& unit_so3, const double& theta, Matrix3d& R)
+/* obtain exp([w]_x * theta) = R */
 {
-    /* obtain the vel from start to goal, expressed in the world frame */
-    // R(vel*dt) * start_T = goal_T
-    Matrix4d dT = goal_T * start_T.inverse();
-    // make sure bounds on vel are met
-    pos = dT.block<3,1>(0,3);
-    double angle;
-    Vector3d axis;
-    rot_to_axis_angle(dT.block<3,3>(0,0), angle, axis);
+    R = Matrix3d::Identity() + unit_so3*sin(theta) + unit_so3*unit_so3*(1-cos(theta));
 }
 
-void pose_to_transform(const Vector3d& start_p, const Quaterniond& start_r,
-                       const Vector3d& goal_p, const Quaterniond& goal_r,
-                       Vector3d& pos, double& angle, Vector3d& axis)
+void se3_to_SE3(const Matrix4d& unit_se3, const double& theta, Matrix4d& T)
+/**
+ * @brief
+ * unit_se3 = [w]_x v
+ *            0     0
+ * 
+ * T = exp([w]_x*theta) p
+ *     0                1
+ */
+{
+    Matrix3d R;
+    so3_to_SO3(unit_se3.block<3,3>(0,0), theta, R);  // R = exp([w]_x*theta)
+    // p = (I-exp([w]_x*theta)) (w x v) + w w^T v theta
+    Vector3d w;
+    vee_operator(unit_se3.block<3,3>(0,0), w);
+    Vector3d v = unit_se3.block<3,1>(0,3);
+    Vector3d p = (Matrix3d::Identity()- R)*(w.cross(v)) + w*w.transpose()*v*theta;
+
+    T.setZero();
+    T.block<3,3>(0,0) = R;
+    T.block<3,1>(0,3) = p;
+    T(3,3) = 1;
+}
+
+void w_to_SO3(const Vector3d& unit_w, const double& theta, Matrix3d& R)
+/* R = exp(w_x * theta) */
+{
+    Matrix3d w_hat;
+    hat_operator(unit_w, w_hat);
+    so3_to_SO3(w_hat, theta, R);
+}
+
+void twist_to_SE3(const Vector6d& unit_twist, const double& theta, Matrix4d& T)
+/* unit_twist: [v,w] */
+{
+    Matrix4d unit_se3;
+    hat_operator(unit_twist, unit_se3);
+    se3_to_SE3(unit_se3, theta, T);
+}
+
+void SO3_to_w(const Matrix3d& R, Vector3d& unit_w, double& theta)
+{
+    rot_to_axis_angle(R, theta, unit_w);
+}
+
+
+void SO3_to_so3(const Matrix3d& R, Matrix3d& unit_so3, double& theta)
+/* given exp([w]_x * theta), obtain [w]_x * theta */
+{
+    Vector3d w;
+    rot_to_axis_angle(R, theta, w);
+
+    hat_operator(w, unit_so3);
+}
+
+
+void SE3_to_twist(const Matrix4d& T, Vector6d& unit_twist, double& theta)
+// twist is represented by: unit_twist * theta
+// unit twist: [v,w]
+{
+    Vector3d w;
+    Matrix3d R = T.block<3,3>(0,0);
+    rot_to_axis_angle(R, theta, w);
+    // p = (I-exp([w]_x * theta)) (w x v) + w w^T v theta
+    // v = G^{-1}p, G = (I-exp([w]_x * theta)) [w]_x + ww^T theta
+    Matrix3d hat_w;
+    hat_operator(w, hat_w);
+    Matrix3d G = (Matrix3d::Identity()-R)*hat_w + w*w.transpose()*theta;
+    Vector3d v = G.inverse()*T.block<3,1>(0,3);
+
+    unit_twist.head(3) = v;
+    unit_twist.tail(3) = w;
+}
+
+void SE3_to_se3(const Matrix4d& T, Matrix4d& unit_se3, double& theta)
+{
+    /* given exp([v,w]_x * theta), obtain [v,w]_x * theta */
+    Vector6d unit_twist;
+    SE3_to_twist(T, unit_twist, theta);  // twist: [v,w]
+    Matrix3d unit_so3;
+    hat_operator(unit_twist.tail(3), unit_so3);
+    unit_se3.setZero();
+    unit_se3.block<3,3>(0,0) = unit_so3;
+    unit_se3.block<3,1>(0,3) = unit_twist.head(3);
+}
+
+void pose_to_rel_transform(const Matrix4d& start_T, const Matrix4d& goal_T,
+                           Matrix4d& dT)
+{
+    /* obtain the transformation from start to goal, expressed in the world frame */
+    // R(vel*dt) * start_T = goal_T
+    dT = goal_T * start_T.inverse();
+}
+
+void pose_to_rel_transform(const Vector3d& start_p, const Quaterniond& start_r,
+                           const Vector3d& goal_p, const Quaterniond& goal_r,
+                           Matrix4d& dT)
 {
     /* obtain the vel from start to goal, expressed in the world frame */
     // R(vel*dt) * start_T = goal_T
     Matrix4d start_T, goal_T;
     pos_rot_to_transform(start_p, start_r, start_T);
     pos_rot_to_transform(goal_p, goal_r, goal_T);
-    pose_to_transform(start_T, goal_T, pos, angle, axis);
+    pose_to_rel_transform(start_T, goal_T, dT);
 }
 
 
@@ -194,80 +307,7 @@ void remove_linear_redundant_constrs(Eigen::MatrixXd& A, Eigen::VectorXd& b)
 }
 
 
-/**
- * @brief 
- * 
- * TODO: unit test
- * @param ang_in 
- * @param n_ss_mode 
- * @param ss_mode 
- */
 
-void ang_to_ss_mode(const double ang_in, const int n_ss_mode,
-                    std::vector<int>& ss_mode)
-{
-    ss_mode.resize(n_ss_mode);
-    for (int i=0; i<ss_mode.size(); i++) ss_mode[i] = 0;
-
-    // decide on axis. the region is pi/Nc. index in [0,2Nc)
-    // obtain the angle of vel
-    double ang = ang_in % (2*M_PI);
-    // [-pi, pi] -> [0,2pi]
-    double ss_ang = M_PI / ss_mode.size();
-    // first idx
-    int axis0 = ang / (ss_ang);
-    int idx0 = axis0 / ss_mode.size();
-    int sign0 = 1;
-    if (idx0 == 1) sign0 = -1;
-    axis0 = axis0 % (ss_mode.size());
-
-    // second idx
-    int axis1 = ang / (ss_ang) + 1;
-    axis1 = axis1 % (2*ss_mode.size());
-    idx1 = axis1 / ss_mode.size();
-    int sign1 = 1;
-    if (idx1 == 1) sign1 = -1;
-    axis1 = axis1 % (ss_mode.size());
-
-    ss_mode[axis0] = sign0;  ss_mode[axis1] = sign1;
-}
-
-
-void vel_to_contact_mode(const Contact* contact,
-                         const Vector6d& twist1, const Vector6d& twist2,
-                         const int n_ss_mode,
-                         int& cs_mode, std::vector<int>& ss_mode)
-{
-    // if the contact is obj with workspace, then set cs modes and ss modes
-    if (((contact->body_type1 == BodyType::OBJECT) && (contact->body_type2 == BodyType::ENV)) ||
-        ((contact->body_type1 == BodyType::ENV) && (contact->body_type2 == BodyType::OBJECT)))
-    {
-        Vector6d twist = twist1 - twist2; // the relative twist in the world frame
-        // since the relative twist is in the world frame, the relative vel at the contact point is:
-        // w_omega cross g_wc + w_v
-        Vector3d w_vel = twist.head<3>() + twist.tail<3>().cross(contact->eigen_pos);
-        // obtain the velocity in the contact frame. g_cw * w_vel
-        Vector3d c_vel = contact->eigen_frame.inverse() * w_vel;
-        ang_to_ss_mode(std::atan2(c_vel[1], c_vel[0]), n_ss_mode, ss_mode);
-
-        cs_mode = 0;
-        return;
-    }
-    // TODO: obj-obj case?
-
-    ss_mode.resize(n_ss_mode);
-    for (int i=0; i<ss_mode.size(); i++) ss_mode[i] = 0;
-    // robot-obj case: cs_mode = 0, ss_mode=sticking
-    if (((contact->body_type1 == BodyType::ROBOT) && (contact->body_type2 == BodyType::OBJECT)) ||
-        ((contact->body_type1 == BodyType::OBJECT) && (contact->body_type2 == BodyType::ROBOT)))
-    {
-        cs_mode = 0;
-    }    
-
-    // otherwise cs_mode = 1
-    cs_mode = 1;
-
-}
 
 /*****************************************************/
 /****************** handling Eigen  ******************/
@@ -327,8 +367,8 @@ void get_col_space_span(const MatrixXd& A, MatrixXd& res)
 {
     // given a matrix A, get the span for the col space of A
     // through QR decomposition
-    std::cout << "A: " << std::endl;
-    std::cout << A << std::endl;
+    // std::cout << "A: " << std::endl;
+    // std::cout << A << std::endl;
     Eigen::ColPivHouseholderQR<MatrixXd> qr(A);  // AP = QR (P: permutation of cols of A)
     int rank = qr.rank();
     std::cout << "rank: " << rank << std::endl;

@@ -17,12 +17,17 @@ set(MJ_INCLUDE_DIR "$ENV{MJ_PATH}/include")
 
 
 find_library(nlopt /usr/local/lib/)
+find_package(OsqpEigen REQUIRED)
 
 
 set(example_required_libraries 
     "${mujoco_LIBRARIES}"
     "glfw"
     "nlopt"
+    "eiquadprog"
+    # "osqp"
+    # "cvxopt"
+    OsqpEigen::OsqpEigen
     )
 
 set(example_include_dirs 
@@ -52,6 +57,7 @@ add_subdirectory(src/tests)
 add_executable(nlopt_test src/examples/nlopt_test.cpp)
 add_executable(mujoco_ik_test src/examples/mujoco_ik_test.cpp)
 add_executable(mujoco_mpc_test src/examples/mujoco_mpc_test.cpp)
+add_executable(single_obj_straight_line_push src/examples/single_obj_straight_line_push.cpp)
 
 
 # add_executable(multi_step_push src/multi_step_push.cpp)
