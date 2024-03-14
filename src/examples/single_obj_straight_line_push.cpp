@@ -46,6 +46,7 @@
 #include <GLFW/glfw3.h>
 #include <eiquadprog/eiquadprog-fast.hpp>
 #include <eiquadprog/eiquadprog.hpp>
+#include <ostream>
 // #include "cvxopt.h
 // #include <osqp-cpp/osqp.h>
 #include "OsqpEigen/OsqpEigen.h"
@@ -146,7 +147,7 @@ void scroll(GLFWwindow* window, double xoffset, double yoffset) {
 // mujoco also provides functions such as mju_quat2Mat
 
 double v_max = 0.01;
-double r_max = 10*M_PI/180;
+double r_max = 15*M_PI/180;
 double duration = 0;
 double dt = 0.01;
 
@@ -161,8 +162,15 @@ void pose_to_twist(const Matrix4d& start_T, const Matrix4d& goal_T,
     std::cout << "dT: " << std::endl;
     std::cout << goal_T*start_T.inverse() << std::endl;
     SE3_to_twist(goal_T*start_T.inverse(), unit_twist, theta); // unit_twist: [v,w]
+    std::cout << "unit twist: " << std::endl;
+    std::cout << unit_twist << std::endl;
+    std::cout << "theta: " << std::endl;
+    std::cout << theta << std::endl;
+    std::cout << theta*unit_twist << std::endl;
+
     double d_pos = unit_twist.head(3).norm() * theta;
-    duration = std::max(d_pos / v_max, theta / r_max);
+    double d_r = unit_twist.tail(3).norm() * theta; // this could be zero
+    duration = std::max(d_pos / v_max, d_r / r_max);
 
     theta = theta / duration;  // theta now denotes the velocity
 }
@@ -318,10 +326,10 @@ int straight_line_plan_1(const Vector3d& robot_pos, Vector6d& sol)
     // VectorXd ci0 = ai0;
 
     std::vector<Vector6d> target_vs;
-    // target_vs.push_back(unit_twist*twist_theta);
-    Vector6d custom_target_v;
-    custom_target_v << 0.01,0,0,0,0,0;
-    target_vs.push_back(custom_target_v);
+    target_vs.push_back(unit_twist*twist_theta);
+    // Vector6d custom_target_v;
+    // custom_target_v << 0.01,0,0,0,0,0;
+    // target_vs.push_back(custom_target_v);
 
     std::vector<int> active_vs;
     active_vs.push_back(1);
@@ -360,94 +368,96 @@ int straight_line_plan_1(const Vector3d& robot_pos, Vector6d& sol)
     // obtain the object vel
     sol = x.segment(joint_names.size(), 6);
 
-    /* check if we can solve it by ourselves */
-    VectorXd new_x(n_vars);
-    int K = 2;
-    new_x.setZero();
-    new_x[0] = 0.01;
-    new_x[3] = 0.01;
-    for (int i=0; i<4; i++)
-    {
-        new_x[3+6+i*2*(1+2*K)+1+1] = 0.01;
-        new_x[3+6+i*2*(1+2*K)+1+K*2] = 981/4;
-        new_x[3+6+i*2*(1+2*K)+1+K*2+1+1] = 981/4;
-    }
-    new_x[3+6+4*2*(1+2*K)+1+2*K] = 981;
-    // check if this satisfies the constraints
-    std::cout << "new_x: " << std::endl;
-    std::cout << new_x << std::endl;
-    std::cout << "Ae * new_x + ae: " << std::endl;
-    std::cout << Ae * new_x + ae0 << std::endl;
-    std::cout << "Ai * new_x + ai: " << std::endl;
-    std::cout << Ai * new_x + ai0 << std::endl;
-    std::cout << "0.5*new_x * G * new_x + g0*new_x: " << std::endl;
-    std::cout << 0.5*new_x.transpose()*G*new_x + g0.transpose() * new_x << std::endl;
+
+
+    // /* check if we can solve it by ourselves */
+    // VectorXd new_x(n_vars);
+    // int K = 2;
+    // new_x.setZero();
+    // new_x[0] = 0.01;
+    // new_x[3] = 0.01;
+    // for (int i=0; i<4; i++)
+    // {
+    //     new_x[3+6+i*2*(1+2*K)+1+1] = 0.01;
+    //     new_x[3+6+i*2*(1+2*K)+1+K*2] = 981/4;
+    //     new_x[3+6+i*2*(1+2*K)+1+K*2+1+1] = 981/4;
+    // }
+    // new_x[3+6+4*2*(1+2*K)+1+2*K] = 981;
+    // // check if this satisfies the constraints
+    // std::cout << "new_x: " << std::endl;
+    // std::cout << new_x << std::endl;
+    // std::cout << "Ae * new_x + ae: " << std::endl;
+    // std::cout << Ae * new_x + ae0 << std::endl;
+    // std::cout << "Ai * new_x + ai: " << std::endl;
+    // std::cout << Ai * new_x + ai0 << std::endl;
+    // std::cout << "0.5*new_x * G * new_x + g0*new_x: " << std::endl;
+    // std::cout << 0.5*new_x.transpose()*G*new_x + g0.transpose() * new_x << std::endl;
 
 
 
-    /* solve by osqp */
-    OsqpEigen::Solver osqp_solver;
-    osqp_solver.settings()->setVerbosity(true);
+    // /* solve by osqp */
+    // OsqpEigen::Solver osqp_solver;
+    // osqp_solver.settings()->setVerbosity(true);
+    // // osqp_solver.initSolver();
+    // MatrixXd A(Ae.rows()+Ai.rows(),Ae.cols());
+    // A << Ae, Ai;
+
+    // Eigen::SparseMatrix<double> hessian = G.sparseView();
+    // Eigen::SparseMatrix<double> linearMatrix = A.sparseView();
+    // VectorXd lowerBound(Ae.rows()+Ai.rows()), upperBound(Ae.rows()+Ai.rows());
+    // upperBound.setConstant(OsqpEigen::INFTY);  // a large value
+    // lowerBound.setZero(); // by default is zero
+    // lowerBound.head(Ae.rows()) = -ae0;
+    // upperBound.head(Ae.rows()) = -ae0;
+    // lowerBound.segment(Ae.rows(),Ai.rows()) = -ai0;
+
+    // osqp_solver.data()->setNumberOfVariables(n_vars);
+    // osqp_solver.data()->setNumberOfConstraints(Ae.rows()+Ai.rows());
+    // osqp_solver.data()->setHessianMatrix(hessian);
+    // osqp_solver.data()->setGradient(g0);
+    // osqp_solver.data()->setLinearConstraintsMatrix(linearMatrix);
+    // osqp_solver.data()->setLowerBound(lowerBound);
+    // osqp_solver.data()->setUpperBound(upperBound);
     // osqp_solver.initSolver();
-    MatrixXd A(Ae.rows()+Ai.rows(),Ae.cols());
-    A << Ae, Ai;
 
-    Eigen::SparseMatrix<double> hessian = G.sparseView();
-    Eigen::SparseMatrix<double> linearMatrix = A.sparseView();
-    VectorXd lowerBound(Ae.rows()+Ai.rows()), upperBound(Ae.rows()+Ai.rows());
-    upperBound.setConstant(OsqpEigen::INFTY);  // a large value
-    lowerBound.setZero(); // by default is zero
-    lowerBound.head(Ae.rows()) = -ae0;
-    upperBound.head(Ae.rows()) = -ae0;
-    lowerBound.segment(Ae.rows(),Ai.rows()) = -ai0;
-
-    osqp_solver.data()->setNumberOfVariables(n_vars);
-    osqp_solver.data()->setNumberOfConstraints(Ae.rows()+Ai.rows());
-    osqp_solver.data()->setHessianMatrix(hessian);
-    osqp_solver.data()->setGradient(g0);
-    osqp_solver.data()->setLinearConstraintsMatrix(linearMatrix);
-    osqp_solver.data()->setLowerBound(lowerBound);
-    osqp_solver.data()->setUpperBound(upperBound);
-    osqp_solver.initSolver();
-
-    OsqpEigen::ErrorExitFlag flag = osqp_solver.solveProblem();
-    if (flag == OsqpEigen::ErrorExitFlag::NoError)
-    {
-        std::cout << "OSQP no error" << std::endl;
-    }
-    else if (flag == OsqpEigen::ErrorExitFlag::DataValidationError)
-    {
-        std::cout << "OSQP data validation error" << std::endl;
-    }
-    else if (flag == OsqpEigen::ErrorExitFlag::SettingsValidationError)
-    {
-        std::cout << "OSQP SettingsValidationError" << std::endl;
-    }
-    else if (flag == OsqpEigen::ErrorExitFlag::LinsysSolverLoadError)
-    {
-        std::cout << "OSQP LinsysSolverLoadError" << std::endl;
-    }
-    else if (flag == OsqpEigen::ErrorExitFlag::LinsysSolverInitError)
-    {
-        std::cout << "OSQP LinsysSolverInitError" << std::endl;
-    }
-    else if (flag == OsqpEigen::ErrorExitFlag::NonCvxError)
-    {
-        std::cout << "OSQP NonCvxError" << std::endl;
-    }
-    else if (flag == OsqpEigen::ErrorExitFlag::MemAllocError)
-    {
-        std::cout << "OSQP MemAllocError" << std::endl;
-    }
-    else if (flag == OsqpEigen::ErrorExitFlag::WorkspaceNotInitError)
-    {
-        std::cout << "OSQP WorkspaceNotInitError" << std::endl;
-    }
+    // OsqpEigen::ErrorExitFlag flag = osqp_solver.solveProblem();
+    // if (flag == OsqpEigen::ErrorExitFlag::NoError)
+    // {
+    //     std::cout << "OSQP no error" << std::endl;
+    // }
+    // else if (flag == OsqpEigen::ErrorExitFlag::DataValidationError)
+    // {
+    //     std::cout << "OSQP data validation error" << std::endl;
+    // }
+    // else if (flag == OsqpEigen::ErrorExitFlag::SettingsValidationError)
+    // {
+    //     std::cout << "OSQP SettingsValidationError" << std::endl;
+    // }
+    // else if (flag == OsqpEigen::ErrorExitFlag::LinsysSolverLoadError)
+    // {
+    //     std::cout << "OSQP LinsysSolverLoadError" << std::endl;
+    // }
+    // else if (flag == OsqpEigen::ErrorExitFlag::LinsysSolverInitError)
+    // {
+    //     std::cout << "OSQP LinsysSolverInitError" << std::endl;
+    // }
+    // else if (flag == OsqpEigen::ErrorExitFlag::NonCvxError)
+    // {
+    //     std::cout << "OSQP NonCvxError" << std::endl;
+    // }
+    // else if (flag == OsqpEigen::ErrorExitFlag::MemAllocError)
+    // {
+    //     std::cout << "OSQP MemAllocError" << std::endl;
+    // }
+    // else if (flag == OsqpEigen::ErrorExitFlag::WorkspaceNotInitError)
+    // {
+    //     std::cout << "OSQP WorkspaceNotInitError" << std::endl;
+    // }
 
 
-    VectorXd osqp_sol = osqp_solver.getSolution();
-    std::cout << "osqp solution: " << std::endl;
-    std::cout << osqp_sol << std::endl;
+    // VectorXd osqp_sol = osqp_solver.getSolution();
+    // std::cout << "osqp solution: " << std::endl;
+    // std::cout << osqp_sol << std::endl;
 
     return status;
 
@@ -494,7 +504,6 @@ void sample_robot_pos_loop()
         robot_pos[2] = obj_target_pos[2];
 
         int status = straight_line_plan_1(robot_pos, sol);
-        exit(0);
 
         if (status == 0)
         {
@@ -525,14 +534,15 @@ void sample_robot_pos_loop()
     for (int i=0; i<n_steps; i++)
     {
         Vector6d dx = dt * sol;  // [v,w]
-        double twist_theta = dx.tail(3).norm();
+        double twist_theta;
+        Vector6d unit_twist;
+        twist_to_unit_twist(dx, unit_twist, twist_theta);
         // Vector6d unit_twist;
         // if (twist_theta <= 1e-7)
         // {
         //     unit_twist(3) = 0; unit_twist(4) = 0; unit_twist(5) = 1;
         //     // unit_twist;
         // }
-        Vector6d unit_twist = dx / twist_theta; // unit twist
         Matrix4d dT;
         twist_to_SE3(unit_twist, twist_theta, dT);
         Matrix4d new_pose = dT*obj_trajectory.back();
@@ -634,8 +644,8 @@ int main(void)
             // set the object trajectory
             Matrix4d obj_pose = obj_trajectory[traj_idx];
             Vector3d robot_pos = obj_pose.block<3,3>(0,0) * robot_in_obj + obj_pose.block<3,1>(0,3);
-            std::cout << "robot_pos: " << std::endl;
-            std::cout << robot_pos << std::endl;
+            // std::cout << "robot_pos: " << std::endl;
+            // std::cout << robot_pos << std::endl;
             int obj_bid = mj_name2id(m, mjOBJ_BODY, "object_0");
             // int obj_jntnum = m->body_jntnum[obj_bid];
             int obj_jntadr = m->body_jntadr[obj_bid];

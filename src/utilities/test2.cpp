@@ -135,6 +135,123 @@ void test_twist_apply()
     std::cout << T_after2 << std::endl;
 }
 
+void test_zero_w()
+{
+    // test when w is zero
+    std::cout << "******************" << std::endl;
+    std::cout << "testing zero w..." << std::endl;
+
+    Vector6d unit_twist; // [v,w]
+    unit_twist.setZero();
+    unit_twist.head(3) = Vector3d::Random();
+    // when w = 0, need to set v to be unit
+    unit_twist.head(3) = unit_twist.head(3)/unit_twist.head(3).norm();
+
+    double theta = 12.0;
+    
+    std::cout << "unit_twist: " << std::endl;
+    std::cout << unit_twist << std::endl;
+
+    Matrix3d R;
+    Matrix4d T;
+
+    Matrix3d unit_so3;
+    Matrix4d unit_se3;
+
+    // obtain unit_so3 and unit_se3 from twist
+    hat_operator(unit_twist.tail(3), unit_so3);
+    std::cout << "unit_so3 from twist: " << std::endl;
+    std::cout << unit_so3 << std::endl;
+    hat_operator(unit_twist, unit_se3);
+    std::cout << "unit_se3 from twist: " << std::endl;
+    std::cout << unit_se3 << std::endl;
+
+
+    w_to_SO3(unit_twist.tail(3), theta, R);
+    std::cout << "w to SO3: " << std::endl;
+    std::cout << R << std::endl;
+
+    so3_to_SO3(unit_so3, theta, R);
+
+    std::cout << "so3 to SO3: " << std::endl;
+    std::cout << R << std::endl;
+
+    // twist to SE3
+    twist_to_SE3(unit_twist, theta, T);
+    std::cout << "twist to SE3: " << std::endl;
+    std::cout << T << std::endl;
+
+    se3_to_SE3(unit_se3, theta, T);
+    std::cout << "se3 to SE3: " << std::endl;
+    std::cout << T << std::endl;
+
+    // reverse
+    T = Matrix4d::Identity();
+    T.block<3,1>(0,3) = unit_twist.head(3) * theta;
+
+    Vector3d unit_w;
+
+    double new_theta;
+    SE3_to_se3(T, unit_se3, new_theta);
+    std::cout << "SE3 to se3: " << std::endl;
+    std::cout << unit_se3 << std::endl;
+    std::cout << new_theta << std::endl;
+
+    SE3_to_twist(T, unit_twist, new_theta);
+    std::cout << "SE3 to twist: " << std::endl;
+    std::cout << unit_twist << std::endl;
+    std::cout << new_theta << std::endl;
+
+    SO3_to_so3(T.block<3,3>(0,0), unit_so3, new_theta);
+    std::cout << "SO3 to so3: " << std::endl;
+    std::cout << unit_so3 << std::endl;
+    std::cout << new_theta << std::endl;
+
+    SO3_to_w(T.block<3,3>(0,0), unit_w, new_theta);
+    std::cout << "SO3 to w: " << std::endl;
+    std::cout << unit_w << std::endl;
+    std::cout << new_theta << std::endl;
+
+    // test when twist = 0
+    Vector6d twist;
+
+    twist.setZero();
+    twist = VectorXd::Random(6);
+    std::cout << "nonzero w to unit_twist..." << std::endl;
+    twist_to_unit_twist(twist, unit_twist, theta);
+    std::cout << unit_twist << std::endl;
+    std::cout << theta << std::endl;
+
+
+    twist.setZero();
+    twist.head(3) = Vector3d::Random();
+    std::cout << "zero w to unit_twist..." << std::endl;
+    twist_to_unit_twist(twist, unit_twist, theta);
+    std::cout << unit_twist << std::endl;
+    std::cout << theta << std::endl;
+
+    twist.setZero();
+    std::cout << "zero twist to unit_twist..." << std::endl;
+    twist_to_unit_twist(twist, unit_twist, theta);
+    std::cout << unit_twist << std::endl;
+    std::cout << theta << std::endl;
+
+
+    std::cout << "SE3 to twist..." << std::endl;
+    T = Matrix4d::Identity();
+    T.block<3,1>(0,3) = Vector3d::Random();
+    SE3_to_twist(T, unit_twist, theta);
+    std::cout << unit_twist << std::endl;
+    std::cout << theta << std::endl;
+
+    std::cout << "empty SE3 to twist..." << std::endl;
+    T = Matrix4d::Identity();
+    SE3_to_twist(T, unit_twist, theta);
+    std::cout << unit_twist << std::endl;
+    std::cout << theta << std::endl;
+
+}
+
 
 int main(void)
 {
@@ -142,4 +259,5 @@ int main(void)
 
     test_twist_apply();
 
+    test_zero_w();
 }

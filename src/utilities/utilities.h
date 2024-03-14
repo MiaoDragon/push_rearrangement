@@ -107,9 +107,35 @@ void rot_to_axis_angle(const Matrix3d& transform, double& angle, Vector3d& axis)
     }
 }
 
+void twist_to_unit_twist(const Vector6d& twist, Vector6d& unit_twist, double& theta)
+{
+    unit_twist.setZero();
+    double norm = twist.tail(3).norm();
+    if (norm == 0.0)
+    {
+        // pure translation
+        theta = twist.head(3).norm();
+        if (theta == 0.0)
+        {
+            // even the translation has zero value, set theta to zero
+        }
+        else
+        {
+            // otherwise obtain the unit translation vector
+            unit_twist.head(3) = twist.head(3) / theta;
+        }
+    }
+    else // angular velocity term is nonzero. normalize the angular velocity
+    {
+        theta = norm;
+        unit_twist = twist / theta;
+    }
+}
+
 
 void so3_to_SO3(const Matrix3d& unit_so3, const double& theta, Matrix3d& R)
 /* obtain exp([w]_x * theta) = R */
+// unit_so3 could be zero, when w=0
 {
     R = Matrix3d::Identity() + unit_so3*sin(theta) + unit_so3*unit_so3*(1-cos(theta));
 }
@@ -122,6 +148,8 @@ void se3_to_SE3(const Matrix4d& unit_se3, const double& theta, Matrix4d& T)
  * 
  * T = exp([w]_x*theta) p
  *     0                1
+ *
+ * unit_so3 = 0, when w = 0
  */
 {
     Matrix3d R;
@@ -130,16 +158,29 @@ void se3_to_SE3(const Matrix4d& unit_se3, const double& theta, Matrix4d& T)
     Vector3d w;
     vee_operator(unit_se3.block<3,3>(0,0), w);
     Vector3d v = unit_se3.block<3,1>(0,3);
-    Vector3d p = (Matrix3d::Identity()- R)*(w.cross(v)) + w*w.transpose()*v*theta;
 
-    T.setZero();
-    T.block<3,3>(0,0) = R;
-    T.block<3,1>(0,3) = p;
-    T(3,3) = 1;
+    if (w.isApproxToConstant(0))
+    {
+        T.setZero();
+        T.block<3,3>(0,0) = Matrix3d::Identity();
+        T.block<3,1>(0,3) = v*theta;
+        T(3,3) = 1;
+    }
+    else
+    {
+        // w != 0
+        Vector3d p = (Matrix3d::Identity()- R)*(w.cross(v)) + w*w.transpose()*v*theta;
+        T.setZero();
+        T.block<3,3>(0,0) = R;
+        T.block<3,1>(0,3) = p;
+        T(3,3) = 1;
+    }
+
 }
 
 void w_to_SO3(const Vector3d& unit_w, const double& theta, Matrix3d& R)
 /* R = exp(w_x * theta) */
+// unit_w could be zero
 {
     Matrix3d w_hat;
     hat_operator(unit_w, w_hat);
@@ -150,22 +191,29 @@ void twist_to_SE3(const Vector6d& unit_twist, const double& theta, Matrix4d& T)
 /* unit_twist: [v,w] */
 {
     Matrix4d unit_se3;
-    hat_operator(unit_twist, unit_se3);
+    hat_operator(unit_twist, unit_se3); // this could handle when unit_twist = 0
     se3_to_SE3(unit_se3, theta, T);
 }
 
 void SO3_to_w(const Matrix3d& R, Vector3d& unit_w, double& theta)
 {
     rot_to_axis_angle(R, theta, unit_w);
+    // when theta = 0, unit_w is still nonzero. 
+    // For the sake of SE3, we set unit_w to zero too.
+
+    if (theta == 0.0)
+    {
+        unit_w.setZero();
+    }
 }
 
 
 void SO3_to_so3(const Matrix3d& R, Matrix3d& unit_so3, double& theta)
 /* given exp([w]_x * theta), obtain [w]_x * theta */
+// unit_so3 = 0 when w = 0
 {
     Vector3d w;
-    rot_to_axis_angle(R, theta, w);
-
+    SO3_to_w(R, w, theta);
     hat_operator(w, unit_so3);
 }
 
@@ -173,19 +221,46 @@ void SO3_to_so3(const Matrix3d& R, Matrix3d& unit_so3, double& theta)
 void SE3_to_twist(const Matrix4d& T, Vector6d& unit_twist, double& theta)
 // twist is represented by: unit_twist * theta
 // unit twist: [v,w]
+// two cases:
+// (1) w = 0
+// (2) w != =
 {
+    unit_twist.setZero();
     Vector3d w;
     Matrix3d R = T.block<3,3>(0,0);
+    Vector3d d = T.block<3,1>(0,3);
     rot_to_axis_angle(R, theta, w);
-    // p = (I-exp([w]_x * theta)) (w x v) + w w^T v theta
-    // v = G^{-1}p, G = (I-exp([w]_x * theta)) [w]_x + ww^T theta
-    Matrix3d hat_w;
-    hat_operator(w, hat_w);
-    Matrix3d G = (Matrix3d::Identity()-R)*hat_w + w*w.transpose()*theta;
-    Vector3d v = G.inverse()*T.block<3,1>(0,3);
+    if (theta == 0.0)
+    {
+        // w = 0
+        // T = [I,p;0,1]
+        // p = v*theta
+        // theta = p.norm()
+        // unit_v = p / theta
+        theta = d.norm();
+        if (theta == 0.0)
+        {
+            // if p.norm() == 0, then we set twist to zero
+        }
+        else
+        {
+            // otherwise, normalize the translation part
+            unit_twist.head(3) = d/theta;
+        }
+    }
+    else
+    {
+        // w != 0
+        // p = (I-exp([w]_x * theta)) (w x v) + w w^T v theta
+        // v = G^{-1}p, G = (I-exp([w]_x * theta)) [w]_x + ww^T theta
+        Matrix3d hat_w;
+        hat_operator(w, hat_w);
+        Matrix3d G = (Matrix3d::Identity()-R)*hat_w + w*w.transpose()*theta;
+        Vector3d v = G.inverse()*T.block<3,1>(0,3);
 
-    unit_twist.head(3) = v;
-    unit_twist.tail(3) = w;
+        unit_twist.head(3) = v;
+        unit_twist.tail(3) = w;
+    }
 }
 
 void SE3_to_se3(const Matrix4d& T, Matrix4d& unit_se3, double& theta)
@@ -193,6 +268,7 @@ void SE3_to_se3(const Matrix4d& T, Matrix4d& unit_se3, double& theta)
     /* given exp([v,w]_x * theta), obtain [v,w]_x * theta */
     Vector6d unit_twist;
     SE3_to_twist(T, unit_twist, theta);  // twist: [v,w]
+    // w could be 0, in which case, v is unit. Otherwise w is unit.
     Matrix3d unit_so3;
     hat_operator(unit_twist.tail(3), unit_so3);
     unit_se3.setZero();
