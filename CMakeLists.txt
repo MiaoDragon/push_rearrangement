@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.16.3)
 
+set (CMAKE_CXX_STANDARD 17)
+
 project(push_rearrangement)
 
 
@@ -50,6 +52,7 @@ link_libraries(${example_required_libraries})
 add_subdirectory(src/utilities)
 add_subdirectory(src/contact)
 add_subdirectory(src/constraint)
+add_subdirectory(src/control)
 add_subdirectory(src/tests)
 
 
@@ -59,7 +62,22 @@ add_executable(mujoco_ik_test src/examples/mujoco_ik_test.cpp)
 add_executable(mujoco_mpc_test src/examples/mujoco_mpc_test.cpp)
 add_executable(single_obj_straight_line_push src/examples/single_obj_straight_line_push.cpp)
 
-
 # add_executable(multi_step_push src/multi_step_push.cpp)
+
+set(project_link_libraries 
+    push-mpc-utils
+    truncated_normal
+    push-mpc-contact
+    push-mpc-constraint
+)
+
+
+
+
+
+target_link_libraries(single_obj_straight_line_push
+                    PUBLIC
+                    ${project_link_libraries}
+                    )
 
 

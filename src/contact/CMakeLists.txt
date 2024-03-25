@@ -23,10 +23,22 @@ link_libraries(${example_required_libraries})
 
 
 add_library(push-mpc-contact 
-    contact.h
+    contact.cpp
     )
 
 add_executable(contact_test test.cpp)
 
 set_target_properties(push-mpc-contact PROPERTIES LINKER_LANGUAGE CXX)
 
+set(project_link_libraries 
+    push-mpc-utils
+    truncated_normal
+    push-mpc-contact
+    push-mpc-constraint
+)
+
+
+target_link_libraries(contact_test
+                    PUBLIC
+                    ${project_link_libraries}
+)

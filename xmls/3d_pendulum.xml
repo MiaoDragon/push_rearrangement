@@ -1,0 +1,67 @@
+<mujoco model="3d_pendulum">
+  <compiler angle="radian" balanceinertia="true" inertiafromgeom="true" 
+    meshdir="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/"
+    texturedir="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/"
+    autolimits="true"/>
+
+  <!-- <option>
+    <flag warmstart="disable" />
+  </option> -->
+  <!-- <default>
+    <geom solref="0.004 1"/>
+    <default class="workspace">
+        <geom friction="1 0.005 0.0001"/>
+    </default>
+  </default> -->
+  <asset>
+    <texture builtin="checker" height="512" name="grid" rgb1="0.1 0.2 0.3" rgb2="0.2 0.3 0.4" type="2d" width="512"/>
+    <material name="grid" emission="1" reflectance="0" shininess="0" specular="0" texrepeat="0.5 0.5" texture="grid" texuniform="true"/>
+  </asset>
+  <worldbody>
+    <geom condim="3" material="grid" name="floor" size="2 2 0.05" pos="0 0 -1.2" type="plane"/>
+    <geom conaffinity="0" contype="0" group="1" material="grid" name="floor_vis" size="2 2 0.05" pos="0 0 -1.2" type="plane"/>
+    <light castshadow="false" diffuse="1 1 1" dir="0 0 -1" directional="true" pos="-0.5 0.5 3"/>
+    <body name="pendulum_root" pos="0 0 0" quat="1 0 0 0">
+    <geom contype="0" conaffinity="0" size="0.015" rgba="1.0 0 0 1" type="sphere"/>
+    <!-- <geom group="3" mesh="cracker_box_col" type="mesh"/>
+    <geom conaffinity="0" contype="0" group="1" material="cracker_box_vis" mesh="cracker_box_vis" type="mesh"/> -->
+        <body name="pendulum_link" pos="0 0 0" quat="1 0 0 0">
+        <geom size="0.01" fromto="0 0 0 0 0 -0.5" rgba="1.0 1.0 1.0 1.0" type="cylinder" mass="1"/>
+        <joint name="ball_joint" type="ball" damping="0.1" frictionloss="0.5"/>
+            <body name="tip" pos="0 0 -0.5" quat="1 0 0 0">
+            <geom contype="0" conaffinity="0" size="0.015" rgba="0 0 1 1" type="sphere" mass="0.5"/>
+            </body>
+        </body>
+    </body>
+
+    <body name="goal_pendulum_root" pos="0 0 0" quat="1 0 0 0">
+    <geom contype="0" conaffinity="0" size="0.015" rgba="1.0 0 0 0.3" type="sphere"/>
+    <!-- <geom group="3" mesh="cracker_box_col" type="mesh"/>
+    <geom conaffinity="0" contype="0" group="1" material="cracker_box_vis" mesh="cracker_box_vis" type="mesh"/> -->
+    <!-- quat="0.1736482 0 0.9848078 0" -->
+        <body name="goal_pendulum_link" pos="0 0 0" quat="0.9659258 0 0.258819 0">
+        <geom contype="0" conaffinity="0" size="0.01" fromto="0 0 0 0 0 -0.5" rgba="1.0 1.0 1.0 0.3" type="cylinder" mass="1"/>
+        <!-- <joint type="ball" damping="0" frictionloss="0.5"/> -->
+            <body name="goal_tip" pos="0 0 -0.5" quat="1 0 0 0">
+            <geom contype="0" conaffinity="0" size="0.015" rgba="0 0 1 0.3" type="sphere" mass="0.5"/>
+            </body>
+        </body>
+    </body>
+  </worldbody>
+
+    <actuator>
+        <intvelocity name="axis_x" joint="ball_joint" gear="1 0 0" ctrlrange="-0.37 0.37" actrange="-3.10 3.10" kp="10"/>
+        <intvelocity name="axis_y" joint="ball_joint" gear="0 1 0" ctrlrange="-0.37 0.37" actrange="-3.10 3.10" kp="10"/>
+        <intvelocity name="axis_z" joint="ball_joint" gear="0 0 1" ctrlrange="-0.37 0.37" actrange="-3.10 3.10" kp="10"/>
+    </actuator>
+
+    <sensor>
+    <!-- provide sensor information of the joint -->
+        <!-- <actuatorpos name="axis_x" actuator="axis_x"/>
+        <actuatorpos name="axis_y" actuator="axis_y"/>
+        <actuatorpos name="axis_z" actuator="axis_z"/> -->
+    <ballquat name="sensor_quat" joint="ball_joint" />
+
+
+    </sensor>
+</mujoco>

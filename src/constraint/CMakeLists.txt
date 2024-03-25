@@ -17,6 +17,13 @@ set(example_link_dirs
     # "${PROJECT_BINARY_DIR}/cmgmp/external/dartsim"
     )
 
+set(project_link_libraries 
+    push-mpc-utils
+    truncated_normal
+    push-mpc-contact
+    push-mpc-constraint
+)
+
 
 include_directories(${example_include_dirs})
 link_libraries(${example_required_libraries})
@@ -24,10 +31,15 @@ link_libraries(${example_required_libraries})
 
 
 add_library(push-mpc-constraint 
-    constraint.h
+    constraint.cpp
     )
 
 add_executable(constraint_test test.cpp)
 
 set_target_properties(push-mpc-constraint PROPERTIES LINKER_LANGUAGE CXX)
 
+
+target_link_libraries(constraint_test
+                    PUBLIC
+                    ${project_link_libraries}
+)
