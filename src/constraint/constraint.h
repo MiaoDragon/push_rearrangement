@@ -49,7 +49,7 @@
  * @param cs_mode: 1 means NOT in contact. 0 means in contact.
  * @param ss_mode 
  */
-void contact_constraint(mjModel* m, mjData* d, Contact* contact, 
+void contact_constraint(const mjModel* m, const mjData* d, const Contact* contact, 
                              const int cs_mode, const std::vector<int> ss_mode,
                              MatrixXd& Ce, VectorXd& ce0, int& ce_size,
                              MatrixXd& Ci, VectorXd& ci0, int& ci_size,
@@ -74,9 +74,9 @@ void contact_constraint(mjModel* m, mjData* d, Contact* contact,
  * @param ai0 
  * @param ai_size 
  */
-void total_constraints(mjModel* m, mjData* d, std::vector<int>& robot_v_indices,
-                       std::vector<int>& obj_body_indices,
-                       Contacts& contacts, 
+void total_constraints(const mjModel* m, const mjData* d, const std::vector<int>& robot_v_indices,
+                       const std::vector<int>& obj_body_indices,
+                       const Contacts& contacts, 
                        const std::vector<int> cs_modes, 
                        const std::vector<std::vector<int>> ss_modes,
                        MatrixXd& Ae, VectorXd& ae0, int& ae_size,
@@ -91,13 +91,16 @@ void total_constraints(mjModel* m, mjData* d, std::vector<int>& robot_v_indices,
  * @param m 
  * @param d 
  * @param robot_v_indices 
- * @param obj_body_indices 
+ * @param target_vs: the target velocities for each object in the optimization problem
+ * @param active_vs: boolean indicator denoting if we are solving for the velocities for each object in the optimziation problem
+ * @param ncon
+ * @param K
  * @param G 
  * @param g0 
  */
-void vel_objective(mjModel* m, mjData* d, 
-                   std::vector<int>& robot_v_indices,
-                   std::vector<Vector6d>& target_vs,
-                   std::vector<int>& active_vs,  // if the vel is active
+void vel_objective(const mjModel* m, const mjData* d, 
+                   const std::vector<int>& robot_v_indices,
+                   const std::vector<Vector6d>& target_vs,
+                   const std::vector<int>& active_vs,  // if the vel is active
                    const int ncon, const int K,  // K: ss mode
                    MatrixXd& G, VectorXd& g0);

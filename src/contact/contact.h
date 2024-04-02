@@ -8,6 +8,8 @@
 #include <string>
 #include <cstring>
 #include <iostream>
+#include <unordered_map>
+#include <unordered_set>
 #include <cstdlib>
 #include <Eigen/Geometry>
 #include <Eigen/Dense>
@@ -20,7 +22,7 @@
 #include "../utilities/utilities.h"
 
 
-enum BodyType {ROBOT, OBJECT, ENV};
+enum BodyType {ROBOT, OBJECT, ENV, EE_POSE, EE_POSITION};
 
 struct Contact
 {
@@ -51,7 +53,8 @@ struct Contact
     int body_id2;  // contact: body1->body2 (force and vel pointing this way)
 
     int body_idx1;
-    int body_idx2;  // for object that has name object_i, we have i as the idx. Otherwise this is -1
+    int body_idx2;  // for object that has name object_i, we have i as the idx. Otherwise this is -1 for env, -2 for robot
+                    // UPDATE: adding -3 for robot end-effector alone
 
     BodyType body_type1;
     BodyType body_type2;
@@ -70,7 +73,8 @@ struct Contact
 
 struct Contacts
 {
-    Contacts(mjModel* m, mjData* d)
+    Contacts(){contacts.resize(0);}
+    Contacts(const mjModel* m, const mjData* d)
     {
         for (int i=0; i<d->ncon; i++)
         {
@@ -82,12 +86,11 @@ struct Contacts
             BodyType body_type1, body_type2;
             int body_idx1, body_idx2;
             const char* root_name1 = mj_id2name(m, mjOBJ_BODY, root_body1);
-            if (strstr(root_name1, "object") != NULL)
+            if (strstr(root_name1, "object") != NULL)  // object name: object_[idx]
             {
                 body_type1 = OBJECT;
                 const char* underscore_pos = strchr(mj_id2name(m, mjOBJ_BODY, body1), '_');
                 body_idx1 = atoi(underscore_pos+1);
-
             }
             else if (strcmp("workspace", root_name1) == 0)
             {
@@ -143,6 +146,153 @@ struct Contacts
     std::vector<Contact*> contacts;
 };
 
+
+/**
+ * @brief define a FocusedContacts structure which focus on a subset
+ * of the objects, and use robot end-effector ball (pose or pos)
+ * NOTE:
+ * (requirement on XML file)
+ * Robot link ee_pose refers to when using end-effector pose.
+ * Robot link ee_position refers to when using end-effector position.
+ * 
+ */
+struct FocusedContacts : public Contacts
+{
+  public:
+    FocusedContacts(const mjModel* m, const mjData* d, 
+                    const std::unordered_set<int>& obj_body_indices,  // (root ids) obj bodies to focus on. The rest is treated as ENV.
+                                                               // (TODO: maybe we can use more informed type than ENV)
+                    const int& robot_type  // 0: consider robot, 1: consider ee_pose, 2: consider ee_position, -1: don't consider robot
+                    ) : Contacts()
+    {
+        this->robot_type = robot_type;
+        this->obj_body_indices = obj_body_indices;
+        for (int i=0; i<d->ncon; i++)
+        {
+            int body1 = m->geom_bodyid[d->contact[i].geom1];
+            int body2 = m->geom_bodyid[d->contact[i].geom2];
+            // check body type
+            int root_body1 = m->body_rootid[body1];
+            int root_body2 = m->body_rootid[body2];
+            BodyType body_type1=ENV, body_type2=ENV;
+            int body_idx1=-1, body_idx2=-1;
+            const char* root_name1 = mj_id2name(m, mjOBJ_BODY, root_body1);
+            if (strstr(root_name1, "object") != NULL)  // object name: object_[idx]
+            {
+                if (obj_body_indices.find(root_body1) != obj_body_indices.end())
+                {
+                    // found the object inside the focused list
+                    body_type1 = OBJECT;
+                    const char* underscore_pos = strchr(mj_id2name(m, mjOBJ_BODY, body1), '_');
+                    body_idx1 = atoi(underscore_pos+1);
+                }
+                else
+                {
+                    // otherwise, treat as env
+                    body_type1 = ENV; body_idx1 = -1;
+                }
+            }
+            else if (strcmp("workspace", root_name1) == 0)
+            {
+                body_type1 = ENV; body_idx1 = -1;
+            }
+            else if (strcmp("world", root_name1) == 0)
+            {
+                body_type1 = ENV; body_idx1 = -1;
+            }
+            else if (strcmp("ee_pose", root_name1) == 0)
+            {
+                if (robot_type != 1)  // we are not using this. Ignore contact
+                {
+                    continue;
+                }
+                // consider this as robot
+                body_type1 = EE_POSE; body_idx1 = -3;
+            }
+            else if (strcmp("ee_position", root_name1) == 0)
+            {
+                if (robot_type != 2)
+                {
+                    continue;
+                }
+                body_type1 = EE_POSITION; body_idx1 = -4;
+            }
+            else // robot
+            {
+                if (robot_type != 0) // if not using robot, ignore
+                {
+                    continue;
+                }
+                body_type1 = ROBOT; body_idx1 = -2;
+            }
+            const char* root_name2 = mj_id2name(m, mjOBJ_BODY, root_body2);
+            if (strstr(root_name2, "object") != NULL)
+            {
+                if (obj_body_indices.find(root_body2) != obj_body_indices.end())
+                {
+                    // found the object inside the focused list
+                    body_type2 = OBJECT;
+                    const char* underscore_pos = strchr(mj_id2name(m, mjOBJ_BODY, body2), '_');
+                    body_idx2 = atoi(underscore_pos+1);
+                }
+                else
+                {
+                    // otherwise, treat as env
+                    body_type1 = ENV; body_idx1 = -1;
+                }
+            }
+            else if (strcmp("workspace", root_name2) == 0)
+            {
+                body_type2 = ENV; body_idx2 = -1;
+            }
+            else if (strcmp("world", root_name2) == 0)
+            {
+                body_type2 = ENV; body_idx2 = -1;
+            }
+            else if (strcmp("ee_pose", root_name2) == 0)
+            {
+                if (robot_type != 1)  // we are not using this. Ignore contact
+                {
+                    continue;
+                }
+                // consider this as robot
+                body_type2 = EE_POSE; body_idx2 = -3;
+            }
+            else if (strcmp("ee_position", root_name2) == 0)
+            {
+                if (robot_type != 2)
+                {
+                    continue;
+                }
+                body_type2 = EE_POSITION; body_idx2 = -4;
+            }
+            else // robot
+            {
+                if (robot_type != 0) // if not using robot, ignore
+                {
+                    continue;
+                }
+                body_type2 = ROBOT; body_idx2 = -2;
+            }
+
+            /**
+             * NOTE:
+             * there is a mismatch of how we represent the contact frame relative to the mujoco
+             * we use z-axis as normal vector, rather than x-axis used by Mujoco.
+             */
+            Contact* contact = new Contact(body1, body2, body_idx1, body_idx2,
+                                          body_type1, body_type2,
+                                          d->contact[i].pos, d->contact[i].frame);
+            contacts.push_back(contact);
+        }
+    }
+    void set_robot_type(const int robot_type) {this->robot_type = robot_type;}
+  protected:
+    std::unordered_set<int> obj_body_indices;
+    int robot_type = -1;
+};
+
+
 /**
  * @brief 
  * 
@@ -159,3 +309,9 @@ void vel_to_contact_mode(const Contact* contact,
                          const Vector6d& twist1, const Vector6d& twist2,
                          const int n_ss_mode,
                          int& cs_mode, std::vector<int>& ss_mode);
+
+void vel_to_contact_modes(const Contacts& contacts,
+                          const std::unordered_map<int,Vector6d>& twists, // body_id -> twist
+                          const int n_ss_mode,
+                          std::vector<int>& cs_modes,
+                          std::vector<std::vector<int>>& ss_modes);

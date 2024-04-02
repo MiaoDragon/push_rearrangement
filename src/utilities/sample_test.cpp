@@ -13,7 +13,6 @@
 #include "sample.h"
 #include "utilities.h"
 
-
 void test_sample_1d()
 {
 

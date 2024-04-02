@@ -31,9 +31,12 @@
 
 #include "mujoco_mppi_intvel.h"
 #include "mujoco_mppi.h"
+#include "task.h"
+#include "policies.h"
+#include "mppi.h"
 
 
-class PendulumMPPI : public MujocoMPPIControllerIntvel
+class PendulumMPPIController : public MujocoMPPIControllerIntvel
 {
   public:
     using MujocoMPPIControllerIntvel::MujocoMPPIControllerIntvel;
@@ -107,7 +110,134 @@ class PendulumMPPI : public MujocoMPPIControllerIntvel
 };
 
 
+class PendulumMPPI : public MujocoMPPI<VectorXd>
+{
+  public:
+    using MujocoMPPI::MujocoMPPI;
 
+    void set_data_from_sensor(const VectorXd& sensordata, mjData*& d)
+    {
+        d = mj_makeData(m);
+        // sensordata: orientation of the ball joint. qw, qx, qy, qz
+        //             position of the end-effector: x, y, z
+        // obtain the current activation from the orientation
+        int joint_idx = mj_name2id(m, mjOBJ_JOINT, "ball_joint");
+        // std::cout << "joint number: " << m->jnt_
+        int jnt_qpos_idx = m->jnt_qposadr[joint_idx];
+        d->qpos[jnt_qpos_idx+0] = sensordata[0];
+        d->qpos[jnt_qpos_idx+1] = sensordata[1];
+        d->qpos[jnt_qpos_idx+2] = sensordata[2];
+        d->qpos[jnt_qpos_idx+3] = sensordata[3];
+
+    }
+    void get_state_from_data(const mjData* d, VectorXd& state)
+    {
+        Vector3d axis1, axis2, axis3;
+        axis1 << 1, 0, 0;
+        axis2 << 0, 1, 0;
+        axis3 << 0, 0, 1;
+
+        int joint_idx = mj_name2id(m, mjOBJ_JOINT, "ball_joint");
+        int jnt_qpos_idx = m->jnt_qposadr[joint_idx];
+        
+        Quaterniond quat(d->qpos[jnt_qpos_idx+0],
+                         d->qpos[jnt_qpos_idx+1],
+                         d->qpos[jnt_qpos_idx+2],
+                         d->qpos[jnt_qpos_idx+3]);
+        AngleAxisd ang_axis(quat);
+        double ang = ang_axis.angle();
+        Vector3d axis = ang_axis.axis();
+
+        state.resize(3);
+        state[0] = ang * axis.transpose() * axis1;
+        state[1] = ang * axis.transpose() * axis2;
+        state[2] = ang * axis.transpose() * axis3;
+    }
+  protected:
+    void set_sensor_from_data(const mjData* d, VectorXd& sensor)
+    {
+        sensor.resize(7);
+        sensor[0] = d->sensordata[0];
+        sensor[1] = d->sensordata[1];
+        sensor[2] = d->sensordata[2];
+        sensor[3] = d->sensordata[3];
+
+        int tip_bid = mj_name2id(m, mjOBJ_BODY, "tip");
+        // compute the position, and track it
+        sensor[4] = d->xpos[tip_bid*3+0];
+        sensor[5] = d->xpos[tip_bid*3+1];
+        sensor[6] = d->xpos[tip_bid*3+2];
+    }
+};
+
+class PendulumTask : public ControlTask<VectorXd>
+{
+  public:
+    using ControlTask::ControlTask;
+
+    Vector3d goal_pos;
+
+    void sensor_to_state(const VectorXd& sensor, VectorXd& state)
+    {
+        // sensor: qw, qx, qy, qz,
+        //         x, y, z of end-effector
+        Quaterniond quat(sensor[0],
+                         sensor[1],
+                         sensor[2],
+                         sensor[3]);
+        AngleAxisd ang_axis(quat);
+        double ang = ang_axis.angle();
+        Vector3d axis = ang_axis.axis();
+
+        Vector3d axis1, axis2, axis3;
+        axis1 << 1, 0, 0;
+        axis2 << 0, 1, 0;
+        axis3 << 0, 0, 1;
+        
+        state.resize(3);
+        state[0] = ang * axis.transpose() * axis1;
+        state[1] = ang * axis.transpose() * axis2;
+        state[2] = ang * axis.transpose() * axis3;
+    }
+
+    double cost(const VectorXd& state, const VectorXd& sensor, const VectorXd& control)
+    {
+        // check state bound
+        bool in_bound = true;
+        in_bound &= compare_vector_smaller_eq(state_lb, state);
+        in_bound &= compare_vector_smaller_eq(state, state_ub);
+        in_bound &= compare_vector_smaller_eq(control_lb, control);
+        in_bound &= compare_vector_smaller_eq(control, control_ub);
+
+        double res = 0;
+        double bound_cost = 10.0;
+        if (!in_bound)
+        {
+            res += bound_cost;
+        }
+
+        // task: track the tip position
+        Vector3d tip_pos = sensor.tail(3);
+        Vector3d diff = tip_pos - goal_pos;
+        res += diff.norm();
+        std::cout << "tip_pos: " << tip_pos.transpose() << std::endl;
+        std::cout << "diff: " << diff.transpose() << std::endl;
+        std::cout << "cost: " << res << std::endl;
+
+        return res;        
+    }
+
+    double terminal_cost(const VectorXd& state, const VectorXd& sensor, const VectorXd& control)
+    {
+        return 0;
+    }
+
+    void set_goal(const Vector3d& goal)
+    {
+        goal_pos = goal;
+    }
+
+};
 
 // MuJoCo data structures
 mjModel* m = NULL;                  // MuJoCo model
@@ -236,6 +366,7 @@ int main(void)
     glfwSetMouseButtonCallback(window, mouse_button);
     glfwSetScrollCallback(window, scroll);
 
+    mj_forward(m, d);
 
     std::vector<const char*> act_names{"axis_x", "axis_y", "axis_z"};
     VectorXd x_ll(3), x_ul(3), u_ll(3), u_ul(3);
@@ -258,17 +389,30 @@ int main(void)
     nominal_x.setZero();  nominal_u.setZero();
 
     int H = 100, N = 10;
-    double default_sigma = 0.3;
+    double default_sigma = 0.1;
+    double dt = 0.01;
 
-    PendulumMPPI controller(H, N, default_sigma, nominal_x, nominal_u, x_ll, x_ul, u_ll, u_ul);
-    controller.set_pos_act_indices(pos_act_indices);
-    controller.set_vel_ctrl_indices(vel_ctrl_indices);
-    controller.set_dt(0.01);//m->opt.timestep);
+    // PendulumMPPI controller(H, N, default_sigma, nominal_x, nominal_u, x_ll, x_ul, u_ll, u_ul);
+    // controller.set_pos_act_indices(pos_act_indices);
+    // controller.set_vel_ctrl_indices(vel_ctrl_indices);
+    // controller.set_dt(0.01);//m->opt.timestep);
 
+
+    PendulumTask task(x_ll, x_ul, u_ll, u_ul);
+    int goal_bid = mj_name2id(m, mjOBJ_BODY, "goal_tip");
+    // compute the position, and track it
+    Vector3d goal_pos;
+    goal_pos[0] = d->xpos[goal_bid*3+0];
+    goal_pos[1] = d->xpos[goal_bid*3+1];
+    goal_pos[2] = d->xpos[goal_bid*3+2];
+    task.set_goal(goal_pos);
+
+
+    KnotControlPolicy policy(H*dt, 3, 0, 10, 1, u_ll, u_ul);
+    PendulumMPPI controller(N, H, dt, default_sigma, &task, &policy, m);
     mjtNum total_simstart = d->time;
 
 
-    mj_forward(m, d);
     for (int i=0; i<10; i++) mj_step(m, d);  // try to stablize
 
     total_simstart = d->time;
@@ -279,27 +423,36 @@ int main(void)
     {
         // if (d->time - total_simstart < 1)
         {
-            std::cout << "stepping... " << step_idx << std::endl;
             step_idx ++;
 
             double* sensordata = d->sensordata;
+            VectorXd sensor(7);
+            sensor[0] = sensordata[0];
+            sensor[1] = sensordata[1];
+            sensor[2] = sensordata[2];
+            sensor[3] = sensordata[3];
+
+            int tip_bid = mj_name2id(m, mjOBJ_BODY, "tip");
+            // compute the position, and track it
+            sensor[4] = d->xpos[tip_bid*3+0];
+            sensor[5] = d->xpos[tip_bid*3+1];
+            sensor[6] = d->xpos[tip_bid*3+2];
+
             // try to set the sensor data to a different value
             
             // sensordata[0] = 30.0/180 * M_PI;
             VectorXd control;
-            controller.step(m, sensordata, control);
+            controller.step(sensor, control);
+            policy.shift_by_time(m->opt.timestep);
 
             for (int i=0; i<pos_act_indices.size(); i++)
             {
                 // d->act[pos_act_indices[i]] = control[i];
             }
 
-            std::cout << "control: " << std::endl;
-            std::cout << control << std::endl;
-
             for (int i=0; i<vel_ctrl_indices.size(); i++)
             {
-                d->ctrl[vel_ctrl_indices[i]] = control[pos_act_indices.size()+i];
+                d->ctrl[vel_ctrl_indices[i]] = control[i];
             }
 
             mj_step(m, d);

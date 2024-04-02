@@ -1,0 +1,1 @@
+This implements motion planning and kinematics solutions for generating smooth motions.

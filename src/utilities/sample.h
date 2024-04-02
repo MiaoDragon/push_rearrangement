@@ -24,6 +24,7 @@
 
 #include "utilities.h"
 #include "truncated_normal.hpp"
+#include "spline.h"
 
 
 // // generate standard Gaussian
@@ -44,3 +45,22 @@
 void truncated_gauss(const std::deque<VectorXd>& mu, const std::deque<VectorXd>& sigma, 
                      const VectorXd& ll, const VectorXd& ul,  // this is for the last axis
                      int& seed, MatrixXd& sample);
+
+// generate one sample of size H x nu
+void truncated_gauss(const std::deque<VectorXd>& mu, const std::deque<VectorXd>& sigma, 
+                     const VectorXd& ll, const VectorXd& ul,  // this is for the last axis
+                     int& seed, std::deque<VectorXd>& sample);
+
+void truncated_gauss(const std::deque<VectorXd>& mu, const double& sigma, 
+                     const VectorXd& ll, const VectorXd& ul,  // this is for the last axis
+                     int& seed, std::deque<VectorXd>& sample);
+
+void truncated_gauss(const knot_point_deque_t& mu, const double& sigma, 
+                     const VectorXd& ll, const VectorXd& ul,  // this is for the last axis
+                     int& seed, knot_point_deque_t& sample);
+
+
+void gauss(const std::deque<VectorXd>& mu, const double& sigma, 
+                     std::default_random_engine& generator, std::deque<VectorXd>& sample);
+void gauss(const knot_point_deque_t& mu, const double& sigma, 
+                     std::default_random_engine& generator, knot_point_deque_t& sample);

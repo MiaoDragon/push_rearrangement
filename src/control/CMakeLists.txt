@@ -1,101 +1,126 @@
-find_package(Eigen3 REQUIRED)
-find_package(OpenMP)
-find_package(absl)
+# find_package(Eigen3 REQUIRED)
+# find_package(OpenMP)
 
-set(MUJOCO_DEP_VERSION_abseil
-    fb3621f4f897824c0dbe0615fa94543df6192f30 # LTS 20230802.1
-    CACHE STRING "Version of `abseil` to be fetched."
-    FORCE
-)
-
-# list(APPEND CMAKE_MODULE_PATH "/home/yinglong/Documents/research/task_motion_planning/non-prehensile-manipulation/project/push_rearrangement/src/control")
-
-# include(FindOrFetch)
-
-# findorfetch(
-#   USE_SYSTEM_PACKAGE
-#   OFF
-#   PACKAGE_NAME
-#   absl
-#   LIBRARY_NAME
-#   abseil-cpp
-#   GIT_REPO
-#   https://github.com/abseil/abseil-cpp.git
-#   GIT_TAG
-#   ${MUJOCO_DEP_VERSION_abseil}
-#   TARGETS
-#   absl::core_headers
-#   EXCLUDE_FROM_ALL
-# )
-
-if (absl_FOUND)
-    message("find absl")
-else()
-    message("cannot find absl")
-endif()
-
-set(example_required_libraries 
-    "${mujoco_LIBRARIES}"
+set(control_required_libraries 
     "glfw"
-    OpenMP::OpenMP_CXX
-    absl::base
+    "${mjpc_libs}"
     # "libmjpc"
     )
 
-set(example_include_dirs 
-    "${PROJECT_SOURCE_DIR}" 
-    # "${PROJECT_SOURCE_DIR}/cmgmp/external/eigen3" 
-    # "${PROJECT_SOURCE_DIR}/cmgmp/external/dartsim"
-    "/home/yinglong/Documents/research/task_motion_planning/non-prehensile-manipulation/mujoco_mpc"
+set(control_include_dirs 
+    "${PROJECT_SOURCE_DIR}/src/control"
     )
 
-set(example_link_dirs 
+set(control_link_dirs 
     "${PROJECT_BINARY_DIR}" 
-    "/home/yinglong/Documents/research/task_motion_planning/non-prehensile-manipulation/mujoco_mpc/build/lib"
     # "${PROJECT_BINARY_DIR}/cmgmp/external/dartsim"
     )
 
-set(project_link_libraries 
-    push-mpc-utils
-    truncated_normal
-    push-mpc-contact
-    push-mpc-constraint
+# set(control_link_libraries 
+#     push-mpc-utils
+#     truncated_normal
+#     push-mpc-contact
+#     push-mpc-constraint
+# )
+
+include_directories(${control_include_dirs})
+link_libraries(${control_required_libraries})
+
+add_executable(cartpole_example cartpole_mjpc_example.cpp)
+target_link_libraries(cartpole_example
+                    PUBLIC
+                    ${project_required_libraries}
+                    ${control_required_libraries}
 )
 
-include_directories(${example_include_dirs})
-link_libraries(${example_required_libraries})
+
+# add_library(mujoco-mppi 
+#     mujoco_mppi.cpp
+#     mujoco_mppi_intvel.cpp
+#     )
+
+
+# set_target_properties(mujoco-mppi PROPERTIES LINKER_LANGUAGE CXX)
 
 
 
-add_library(mujoco-mppi 
-    mujoco_mppi.cpp
-    mujoco_mppi_intvel.cpp
-    )
+
+
+# add_library(mujoco-mppi-policies 
+#     policies.cpp
+#     )
+
+# add_library(mujoco-mppi-task 
+#     task.cpp
+#     )
+
+# add_library(mujoco-mppi-new
+#     mppi.cpp
+#     )
 
 
 
-add_executable(pendulum_test pendulum_example.cpp)
+# set_target_properties(mujoco-mppi-policies PROPERTIES LINKER_LANGUAGE CXX)
+# target_link_libraries(mujoco-mppi-policies
+#                     PUBLIC
+#                     ${project_link_libraries}
+# )
+
+# set_target_properties(mujoco-mppi-task PROPERTIES LINKER_LANGUAGE CXX)
+# target_link_libraries(mujoco-mppi-task
+#                     PUBLIC
+#                     ${project_link_libraries}
+# )
+# set_target_properties(mujoco-mppi-new PROPERTIES LINKER_LANGUAGE CXX)
+# target_link_libraries(mujoco-mppi-new
+#                     PUBLIC
+#                     ${project_link_libraries}
+# )
+
+
+
+
+# add_executable(policy_test policy_test.cpp)
+# target_link_libraries(policy_test
+#                     PUBLIC
+#                     ${project_link_libraries}
+#                     mujoco-mppi-policies
+# )
+
+
+# add_executable(pendulum_test pendulum_example.cpp)
+
+# # add_executable(cartpole_example cartpole_example.cpp)
+
+
+# target_link_libraries(pendulum_test
+#                     PUBLIC
+#                     push-mpc-utils
+#                     truncated_normal
+#                     mujoco-mppi
+#                     mujoco-mppi-policies                    
+#                     mujoco-mppi-task                    
+#                     mujoco-mppi-new                    
+# )
+
+# target_link_libraries(pendulum_test
+#                     PUBLIC
+#                     ${project_link_libraries}
+# )
 
 # add_executable(cartpole_example cartpole_example.cpp)
 
-set_target_properties(mujoco-mppi PROPERTIES LINKER_LANGUAGE CXX)
+# target_link_libraries(cartpole_example
+#                     PUBLIC
+#                     push-mpc-utils
+#                     truncated_normal
+#                     mujoco-mppi
+#                     mujoco-mppi-policies                    
+#                     mujoco-mppi-task                    
+#                     mujoco-mppi-new                    
+# )
 
-target_link_libraries(pendulum_test
-                    PUBLIC
-                    push-mpc-utils
-                    truncated_normal
-                    mujoco-mppi
-)
-
-target_link_libraries(pendulum_test
-                    PUBLIC
-                    ${project_link_libraries}
-)
-
-
-
-add_library(mujoco-mppi-policies 
-    policies.cpp
-    )
-    
-set_target_properties(mujoco-mppi-policies PROPERTIES LINKER_LANGUAGE CXX)
+# target_link_libraries(cartpole_example
+#                     PUBLIC
+#                     ${project_link_libraries}
+# )

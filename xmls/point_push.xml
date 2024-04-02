@@ -52,20 +52,20 @@
 
     <!-- <body name="pointmass" pos="0.22 0 0.1" gravcomp="1"> -->
     <!-- <body name="pointmass" pos="0.7000660902822591 -0.05971188968363312 1.035" gravcomp="1"> -->
-    <body name="pointmass" pos="0 0 0" gravcomp="1">
+    <body name="ee_position" pos="0 0 0" gravcomp="1">
       <camera name="cam0" pos="0 -0.3 0.3" xyaxes="1 0 0 0 0.7 0.7"/>
-      <joint name="root_x" type="slide"  pos="0 0 0" axis="1 0 0" />
-      <joint name="root_y" type="slide"  pos="0 0 0" axis="0 1 0" />
-      <joint name="root_z" type="slide"  pos="0 0 0" axis="0 0 1" />
-      <geom name="pointmass" type="sphere" size=".005" mass="0.05"/>
+      <joint name="ee_position_x" type="slide"  pos="0 0 0" axis="1 0 0" />
+      <joint name="ee_position_y" type="slide"  pos="0 0 0" axis="0 1 0" />
+      <joint name="ee_position_z" type="slide"  pos="0 0 0" axis="0 0 1" />
+      <geom name="ee_position" type="sphere" size=".005" mass="0.05"/>
       <site name="tip" pos="0 0 0" size="0.001"/>
     </body>
   </worldbody>
 
   <actuator>
-    <velocity name="x_vel" joint="root_x" kv="10" ctrllimited="true" ctrlrange="-0.1 0.1"/>
-    <velocity name="y_vel" joint="root_y" kv="10" ctrllimited="true" ctrlrange="-0.1 0.1"/>
-    <velocity name="z_vel" joint="root_z" kv="10" ctrllimited="true" ctrlrange="-0.1 0.1"/>
+    <velocity name="ee_position_x_vel" joint="ee_position_x" kv="10" ctrllimited="true" ctrlrange="-0.1 0.1"/>
+    <velocity name="ee_position_y_vel" joint="ee_position_y" kv="10" ctrllimited="true" ctrlrange="-0.1 0.1"/>
+    <velocity name="ee_position_z_vel" joint="ee_position_z" kv="10" ctrllimited="true" ctrlrange="-0.1 0.1"/>
     <!-- <velocity name="x_vel" joint="root_x" kv="10" ctrllimited="true" ctrlrange="-0.05 0.05"/>
     <velocity name="y_vel" joint="root_y" kv="10" ctrllimited="true" ctrlrange="-0.05 0.05"/>
     <velocity name="z_vel" joint="root_z" kv="10" ctrllimited="true" ctrlrange="-0.05 0.05"/> -->

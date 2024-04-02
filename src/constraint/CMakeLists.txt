@@ -1,4 +1,4 @@
-find_package(Eigen3 REQUIRED)
+# find_package(Eigen3 REQUIRED)
 
 set(example_required_libraries 
     "${mujoco_LIBRARIES}"
@@ -18,10 +18,10 @@ set(example_link_dirs
     )
 
 set(project_link_libraries 
-    push-mpc-utils
+    push-utils
     truncated_normal
-    push-mpc-contact
-    push-mpc-constraint
+    push-contact
+    push-constraint
 )
 
 
@@ -30,13 +30,13 @@ link_libraries(${example_required_libraries})
 
 
 
-add_library(push-mpc-constraint 
+add_library(push-constraint 
     constraint.cpp
     )
 
 add_executable(constraint_test test.cpp)
 
-set_target_properties(push-mpc-constraint PROPERTIES LINKER_LANGUAGE CXX)
+set_target_properties(push-constraint PROPERTIES LINKER_LANGUAGE CXX)
 
 
 target_link_libraries(constraint_test

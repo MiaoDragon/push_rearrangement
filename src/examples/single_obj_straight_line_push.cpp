@@ -69,7 +69,7 @@ double lastx = 0;
 double lasty = 0;
 
 int t=0;  // 0: rotate around x-axis. 1, 2 similar
-const double axis_list[3][3] = {{1,0,0},{0,1,0},{0,0,1}};
+// const double axis_list[3][3] = {{1,0,0},{0,1,0},{0,0,1}};
 
 std::vector<Matrix4d> obj_trajectory;
 Vector3d robot_in_obj;  // robot contact point
@@ -182,8 +182,8 @@ void pose_to_twist(const Vector3d& start_p, const Quaterniond& start_r,
 {
     /* obtain the vel from start to goal, expressed in the world frame */
     // R(vel*dt) * start_T = goal_T
-    Vector3d pos, axis;
-    double angle;
+    // Vector3d pos, axis;
+    // double angle;
     Matrix4d start_T, goal_T;
     pos_rot_to_transform(start_p, start_r, start_T);
     pos_rot_to_transform(goal_p, goal_r, goal_T);
@@ -274,7 +274,7 @@ int straight_line_plan_1(const Vector3d& robot_pos, Vector6d& sol)
 
     MatrixXd Ce, Ci;
     VectorXd ce, ci;
-    int ce_size, ci_size;
+    // int ce_size, ci_size;
 
     std::vector<const char*> joint_names{"root_x",
                                         "root_y",
@@ -353,6 +353,7 @@ int straight_line_plan_1(const Vector3d& robot_pos, Vector6d& sol)
 
     eiquadprog::solvers::EiquadprogFast solver;
     int status = solver.solve_quadprog(G, g0, Ae, ae0, Ai, ai0, x);
+    solver.reset(0, 0, 0);  // this is important to avoid memory issue
 
     // double f = Eigen::solve_quadprog(G, g0, Ae.transpose(), ae0, Ai.transpose(), ai0, x);
     // std::cout << "f: " << f << std::endl;
@@ -459,6 +460,7 @@ int straight_line_plan_1(const Vector3d& robot_pos, Vector6d& sol)
     // std::cout << "osqp solution: " << std::endl;
     // std::cout << osqp_sol << std::endl;
 
+    std::cout << "returning" << std::endl;
     return status;
 
 
@@ -504,7 +506,7 @@ void sample_robot_pos_loop()
         robot_pos[2] = obj_target_pos[2];
 
         int status = straight_line_plan_1(robot_pos, sol);
-
+        std::cout << "out of functino" << std::endl;
         if (status == 0)
         {
             std::cout << "SUCCESS!" << std::endl;
@@ -602,20 +604,20 @@ int main(void)
                                         "arm_left_joint_5_r",
                                         "arm_left_joint_6_b"};
 
-    double q[15] = {0, 1.75, 0.8, 0, -0.66, 0, 0, 0, 
-                    1.75, 0.8, 0, -0.66, 0, 0, 0};
+    // double q[15] = {0, 1.75, 0.8, 0, -0.66, 0, 0, 0, 
+    //                 1.75, 0.8, 0, -0.66, 0, 0, 0};
 
-    double lb[8] = { -1.58, -3.13, -1.9, -2.95, -2.36, -3.13, -1.9, -3.13 }; /* lower bounds */
-    double ub[8] = { 1.58, 3.13, 1.9, 2.95, 2.36, 3.13, 1.9, 3.13 }; /* upper bounds */
+    // double lb[8] = { -1.58, -3.13, -1.9, -2.95, -2.36, -3.13, -1.9, -3.13 }; /* lower bounds */
+    // double ub[8] = { 1.58, 3.13, 1.9, 2.95, 2.36, 3.13, 1.9, 3.13 }; /* upper bounds */
 
-    const char* link_name = "arm_left_link_6_b";
-    double pose[7];
+    // const char* link_name = "arm_left_link_6_b";
+    // double pose[7];
 
 
     // obtain target pose from xml
-    int target_bid = mj_name2id(m, mjOBJ_BODY, "target");
-    int jnt_idx = m->body_jntadr[target_bid];
-    int qadr = m->jnt_qposadr[jnt_idx];
+    // int target_bid = mj_name2id(m, mjOBJ_BODY, "target");
+    // int jnt_idx = m->body_jntadr[target_bid];
+    // int qadr = m->jnt_qposadr[jnt_idx];
 
 
     // inverse_kinematics(joint_names, q, link_name, pose);
@@ -661,8 +663,8 @@ int main(void)
 
             // robot pose
             int robot_bid = mj_name2id(m, mjOBJ_BODY, "pointmass");
-            int robot_jntadr = m->body_jntadr[robot_bid];
-            int robot_qposadr = m->jnt_qposadr[robot_jntadr];  // x,y,z
+            // int robot_jntadr = m->body_jntadr[robot_bid];
+            // int robot_qposadr = m->jnt_qposadr[robot_jntadr];  // x,y,z
 
             int qadr1 = m->jnt_qposadr[m->body_jntadr[robot_bid]];
             int qadr2 = m->jnt_qposadr[m->body_jntadr[robot_bid]+1];
@@ -678,6 +680,7 @@ int main(void)
             traj_idx = (traj_idx + 1) % obj_trajectory.size();
 
         }
+        if (traj_idx % 10 != 0) continue;
         // get framebuffer viewport
         mjrRect viewport = {0,0,0,0};
         glfwGetFramebufferSize(window, &viewport.width, &viewport.height);

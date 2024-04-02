@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cmath>
 #include <vector>
 #include <iostream>
@@ -71,7 +72,7 @@ void adjoint(Matrix4d& g, Matrix6d& res)
     res.block<3,3>(3,3) = R;
 }
 
-void pos_mat_to_transform(double* pos, double* mat, Matrix4d& res)
+void pos_mat_to_transform(const double* pos, const double* mat, Matrix4d& res)
 {
     // given position (3) and rotation matrix (9)
     // obtain transformation matrix
@@ -295,12 +296,32 @@ void pose_to_rel_transform(const Vector3d& start_p, const Quaterniond& start_r,
     pose_to_rel_transform(start_T, goal_T, dT);
 }
 
+void pose_to_twist(const Matrix4d& start_T, const Matrix4d& goal_T,
+                   Vector6d& unit_twist, double& theta)
+// TODO: the implementation is wrong. need to use screw theory
+{
+    /* obtain the vel from start to goal, expressed in the world frame */
+    // R(vel*dt) * start_T = goal_T
+
+    SE3_to_twist(goal_T*start_T.inverse(), unit_twist, theta); // unit_twist: [v,w]
+}
+
+void pose_to_twist(const Vector3d& start_p, const Quaterniond& start_r,
+                   const Vector3d& goal_p, const Quaterniond& goal_r,
+                   Vector6d& unit_twist, double& theta)
+{
+    Matrix4d start_T, goal_T;
+    pos_rot_to_transform(start_p, start_r, start_T);
+    pos_rot_to_transform(goal_p, goal_r, goal_T);
+    pose_to_twist(start_T, goal_T, unit_twist, theta);
+}
+
 
 /*****************************************************/
 /****************** Mujoco utilities******************/
 /*****************************************************/
 
-void mj_to_transform(mjModel* m, mjData* d, int bid, Matrix4d& g)
+void mj_to_transform(const mjModel* m, const mjData* d, int bid, Matrix4d& g)
 {
     g.setZero();
 
@@ -330,9 +351,6 @@ void sample_point(mjModel* m, mjData* d, const int gid, Vector3d& pos)
 /*****************************************************/
 /*************** helper function for opt  ************/
 /*****************************************************/
-void sort_eigen_matrix(Eigen::MatrixXd& matrix);
-void unique_row_matrix(Eigen::MatrixXd& matrix);
-void get_col_space_span(const MatrixXd& A, MatrixXd& res);
 
 // citation: ChatGPT
 void remove_redundant_constrs(Eigen::MatrixXd& A, Eigen::VectorXd& b)
@@ -379,6 +397,7 @@ void remove_linear_redundant_constrs(Eigen::MatrixXd& A, Eigen::VectorXd& b)
     // update A and b
     A = P.block(0,0,P.rows(),P.cols()-1);
     b = P.col(P.cols()-1);
+    std::cout << "after removing linear redundant constraints" << std::endl;
 }
 
 
@@ -452,6 +471,7 @@ void get_col_space_span(const MatrixXd& A, MatrixXd& res)
     // obtain the first "rank" columns of Q as the span of the col space of mat_interest
     // ref: https://en.wikipedia.org/wiki/QR_decomposition#Rectangular_matrix
     MatrixXd span = Q.block(0,0,Q.rows(),rank);
+    std::cout << "after getting col_space_span" << std::endl;
     res = span;
 }
 
@@ -471,3 +491,13 @@ void uniform_sample_3d(const Vector3d& ll, const Vector3d& ul, Vector3d& res)
     }
 }
 // void uniform_samples(const VectorXd& ll, const VectorXd& ul,)
+
+
+bool compare_vector_smaller_eq(const VectorXd& a, const VectorXd& b)
+{
+    for (int i=0; i<std::min(a.size(),b.size()); i++)
+    {
+        if (a[i] > b[i]) return false;
+    }
+    return true;
+}

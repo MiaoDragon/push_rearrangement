@@ -42,7 +42,7 @@ double lastx = 0;
 double lasty = 0;
 
 int t=0;  // 0: rotate around x-axis. 1, 2 similar
-const double axis_list[3][3] = {{1,0,0},{0,1,0},{0,0,1}};
+// const double axis_list[3][3] = {{1,0,0},{0,1,0},{0,0,1}};
 
 
 // keyboard callback
@@ -226,7 +226,7 @@ void test_total_constraint()
 
     MatrixXd Ce, Ci;
     VectorXd ce, ci;
-    int ce_size, ci_size;
+    // int ce_size, ci_size;
     Eigen::Matrix<double, 3, 18> Fe1, Fe2, Te1, Te2;
 
     std::vector<const char*> joint_names{"root_x",
@@ -319,7 +319,7 @@ void test_solve_total_constraint()
 
     MatrixXd Ce, Ci;
     VectorXd ce, ci;
-    int ce_size, ci_size;
+    // int ce_size, ci_size;
     Eigen::Matrix<double, 3, 18> Fe1, Fe2, Te1, Te2;
 
     std::vector<const char*> joint_names{"root_x",
@@ -511,7 +511,7 @@ int test_solve_total_constraint_1(Vector3d& robot_pos)
 
     MatrixXd Ce, Ci;
     VectorXd ce, ci;
-    int ce_size, ci_size;
+    // int ce_size, ci_size;
     Eigen::Matrix<double, 3, 18> Fe1, Fe2, Te1, Te2;
 
     std::vector<const char*> joint_names{"root_x",
@@ -738,20 +738,20 @@ int main(void)
                                         "arm_left_joint_5_r",
                                         "arm_left_joint_6_b"};
 
-    double q[15] = {0, 1.75, 0.8, 0, -0.66, 0, 0, 0, 
-                    1.75, 0.8, 0, -0.66, 0, 0, 0};
+    // double q[15] = {0, 1.75, 0.8, 0, -0.66, 0, 0, 0, 
+    //                 1.75, 0.8, 0, -0.66, 0, 0, 0};
 
-    double lb[8] = { -1.58, -3.13, -1.9, -2.95, -2.36, -3.13, -1.9, -3.13 }; /* lower bounds */
-    double ub[8] = { 1.58, 3.13, 1.9, 2.95, 2.36, 3.13, 1.9, 3.13 }; /* upper bounds */
+    // double lb[8] = { -1.58, -3.13, -1.9, -2.95, -2.36, -3.13, -1.9, -3.13 }; /* lower bounds */
+    // double ub[8] = { 1.58, 3.13, 1.9, 2.95, 2.36, 3.13, 1.9, 3.13 }; /* upper bounds */
 
-    const char* link_name = "arm_left_link_6_b";
-    double pose[7];
+    // const char* link_name = "arm_left_link_6_b";
+    // double pose[7];
 
 
     // obtain target pose from xml
-    int target_bid = mj_name2id(m, mjOBJ_BODY, "target");
-    int jnt_idx = m->body_jntadr[target_bid];
-    int qadr = m->jnt_qposadr[jnt_idx];
+    // int target_bid = mj_name2id(m, mjOBJ_BODY, "target");
+    // int jnt_idx = m->body_jntadr[target_bid];
+    // int qadr = m->jnt_qposadr[jnt_idx];
 
 
     // inverse_kinematics(joint_names, q, link_name, pose);

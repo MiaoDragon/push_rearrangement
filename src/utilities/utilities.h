@@ -35,7 +35,7 @@ void vee_operator(const Matrix4d& se3, Vector6d &res);
 
 void adjoint(Matrix4d& g, Matrix6d& res);
 
-void pos_mat_to_transform(double* pos, double* mat, Matrix4d& res);
+void pos_mat_to_transform(const double* pos, const double* mat, Matrix4d& res);
 void pos_rot_to_transform(const Vector3d& pos, const Quaterniond& ori, Matrix4d& res);
 void rot_to_axis_angle(const Matrix3d& transform, double& angle, Vector3d& axis);
 void twist_to_unit_twist(const Vector6d& twist, Vector6d& unit_twist, double& theta);
@@ -56,13 +56,20 @@ void pose_to_rel_transform(const Vector3d& start_p, const Quaterniond& start_r,
                            const Vector3d& goal_p, const Quaterniond& goal_r,
                            Matrix4d& dT);
 
+/* assuming time is in [0,1] to interpolate between start_T and goal_T */
+void pose_to_twist(const Matrix4d& start_T, const Matrix4d& goal_T,
+                   Vector6d& unit_twist, double& theta);
+void pose_to_twist(const Vector3d& start_p, const Quaterniond& start_r,
+                   const Vector3d& goal_p, const Quaterniond& goal_r,
+                   Vector6d& unit_twist, double& theta);
+
 /*****************************************************/
 /****************** Mujoco utilities******************/
 /*****************************************************/
 
-void mj_to_transform(mjModel* m, mjData* d, int bid, Matrix4d& g);
+void mj_to_transform(const mjModel* m, const mjData* d, int bid, Matrix4d& g);
 /* sampling points on an object */
-void sample_point(mjModel* m, mjData* d, const int gid, Vector3d& pos);
+void sample_point(const mjModel* m, const mjData* d, const int gid, Vector3d& pos);
 /*****************************************************/
 /*************** helper function for opt  ************/
 /*****************************************************/
@@ -86,3 +93,5 @@ void get_col_space_span(const MatrixXd& A, MatrixXd& res);
 /* sampling distribution */
 void uniform_sample_3d(const Vector3d& ll, const Vector3d& ul, Vector3d& res);
 // void uniform_samples(const VectorXd& ll, const VectorXd& ul,)
+
+bool compare_vector_smaller_eq(const VectorXd& a, const VectorXd& b);

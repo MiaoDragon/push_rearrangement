@@ -220,6 +220,59 @@ void vel_to_contact_mode(const Contact* contact,
         return;
     }    
 
-    // otherwise cs_mode = 1
+    if (((contact->body_type1 == BodyType::EE_POSE) && (contact->body_type2 == BodyType::OBJECT)) ||
+        ((contact->body_type1 == BodyType::OBJECT) && (contact->body_type2 == BodyType::EE_POSE)))
+    {
+        cs_mode = 0;
+        return;
+    }    
+
+    if (((contact->body_type1 == BodyType::EE_POSITION) && (contact->body_type2 == BodyType::OBJECT)) ||
+        ((contact->body_type1 == BodyType::OBJECT) && (contact->body_type2 == BodyType::EE_POSITION)))
+    {
+        cs_mode = 0;
+        return;
+    }    
+
+
+    // otherwise cs_mode = 1 (breaking contact)
     cs_mode = 1;
+}
+
+void vel_to_contact_modes(const Contacts& contacts,
+                          const std::unordered_map<int,Vector6d>& twists, // body_id -> twist
+                          const int n_ss_mode,
+                          std::vector<int>& cs_modes,
+                          std::vector<std::vector<int>>& ss_modes)
+{
+    cs_modes.resize(0);
+    ss_modes.resize(0);
+    // compare the values
+    for (int i=0; i<contacts.contacts.size(); i++)
+    {
+        Vector6d twist1 = VectorXd::Zero(6);
+        Vector6d twist2 = VectorXd::Zero(6);
+
+        // if (twists.contains(contacts.contacts[i]->body_id1))
+        if (twists.find(contacts.contacts[i]->body_id1) != twists.end())
+        {
+            twist1 = twists.at(contacts.contacts[i]->body_id1);
+        }
+        // if (twists.contains(contacts.contacts[i]->body_id2))
+        if (twists.find(contacts.contacts[i]->body_id2) != twists.end())
+        {
+            twist2 = twists.at(contacts.contacts[i]->body_id2);
+        }
+
+        int cs_mode;
+        std::vector<int> ss_mode;
+        vel_to_contact_mode(contacts.contacts[i], twist1, twist2, 2, cs_mode, ss_mode);
+
+        std::cout << "cs_mode: " << cs_mode << std::endl;
+        std::cout << "ss_mode: " << std::endl;
+        for (int j=0; j<ss_mode.size(); j++)  std::cout << ss_mode[j] << ", " << std::endl;
+
+        cs_modes.push_back(cs_mode);
+        ss_modes.push_back(ss_mode);
+    }
 }

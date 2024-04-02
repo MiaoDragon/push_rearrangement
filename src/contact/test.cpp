@@ -16,9 +16,13 @@
 #include <ctime>
 #include <iostream>
 #include <fstream>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include <string>
 #include <cstring>
+
+#include "../utilities/utilities.h"
 
 
 // MuJoCo data structures
@@ -38,7 +42,7 @@ double lastx = 0;
 double lasty = 0;
 
 int t=0;  // 0: rotate around x-axis. 1, 2 similar
-const double axis_list[3][3] = {{1,0,0},{0,1,0},{0,0,1}};
+// const double axis_list[3][3] = {{1,0,0},{0,1,0},{0,0,1}};
 
 
 // keyboard callback
@@ -232,6 +236,221 @@ void test_ss_mode()
 
 }
 
+void test_focused_contacts()
+{
+
+    Contacts contacts(m, d);
+
+    std::cout << "normal contacts:" << std::endl;
+    // compare the values
+    for (int i=0; i<contacts.contacts.size(); i++)
+    {
+        std::cout << "contact " << i << std::endl;
+        std::cout << "body_id1: " << contacts.contacts[i]->body_id1 << std::endl;
+        std::cout << "body_id2: " << contacts.contacts[i]->body_id2 << std::endl;
+        std::cout << "body_type1: " << contacts.contacts[i]->body_type1 << std::endl;
+        std::cout << "body_type2: " << contacts.contacts[i]->body_type2 << std::endl;
+        std::cout << "pos: " << contacts.contacts[i]->pos[0] << "," <<
+                                contacts.contacts[i]->pos[1] << "," <<
+                                contacts.contacts[i]->pos[2] << std::endl;
+        std::cout << "frame: " << contacts.contacts[i]->frame[0] << "," <<
+                                  contacts.contacts[i]->frame[1] << "," <<
+                                  contacts.contacts[i]->frame[2] << "," <<
+                                  contacts.contacts[i]->frame[3] << "," <<
+                                  contacts.contacts[i]->frame[4] << "," <<
+                                  contacts.contacts[i]->frame[5] << "," <<
+                                  contacts.contacts[i]->frame[6] << "," <<
+                                  contacts.contacts[i]->frame[7] << "," <<
+                                  contacts.contacts[i]->frame[8] << std::endl;
+
+        std::cout << "Mujoco contact: " << std::endl;
+        std::cout << "body_id1: " << m->geom_bodyid[d->contact[i].geom1] << std::endl;
+        std::cout << "body_id2: " << m->geom_bodyid[d->contact[i].geom2] << std::endl;
+        std::cout << "body_type1: " << mj_id2name(m, mjOBJ_BODY, m->body_rootid[m->geom_bodyid[d->contact[i].geom1]]) << std::endl;
+        std::cout << "body_type1: " << mj_id2name(m, mjOBJ_BODY, m->body_rootid[m->geom_bodyid[d->contact[i].geom2]]) << std::endl;
+        std::cout << "pos: " << d->contact[i].pos[0] << "," <<
+                                d->contact[i].pos[1] << "," <<
+                                d->contact[i].pos[2] << std::endl;
+        std::cout << "frame: " << d->contact[i].frame[0] << "," <<
+                                  d->contact[i].frame[1] << "," <<
+                                  d->contact[i].frame[2] << "," <<
+                                  d->contact[i].frame[3] << "," <<
+                                  d->contact[i].frame[4] << "," <<
+                                  d->contact[i].frame[5] << "," <<
+                                  d->contact[i].frame[6] << "," <<
+                                  d->contact[i].frame[7] << "," <<
+                                  d->contact[i].frame[8] << std::endl;
+
+    }
+
+
+    std::unordered_set<int> obj_body_indices;
+    obj_body_indices.insert(mj_name2id(m, mjOBJ_BODY, "object_0"));
+    FocusedContacts focused_contacts(m, d, obj_body_indices, -1);  // -1 for ignoring robot
+
+    std::cout << "focused contacts:" << std::endl;
+    // compare the values
+    for (int i=0; i<focused_contacts.contacts.size(); i++)
+    {
+        std::cout << "contact " << i << std::endl;
+        std::cout << "body_id1: " << focused_contacts.contacts[i]->body_id1 << std::endl;
+        std::cout << "body_id2: " << focused_contacts.contacts[i]->body_id2 << std::endl;
+        std::cout << "body_type1: " << focused_contacts.contacts[i]->body_type1 << std::endl;
+        std::cout << "body_type2: " << focused_contacts.contacts[i]->body_type2 << std::endl;
+        std::cout << "pos: " << focused_contacts.contacts[i]->pos[0] << "," <<
+                                focused_contacts.contacts[i]->pos[1] << "," <<
+                                focused_contacts.contacts[i]->pos[2] << std::endl;
+        std::cout << "frame: " << focused_contacts.contacts[i]->frame[0] << "," <<
+                                  focused_contacts.contacts[i]->frame[1] << "," <<
+                                  focused_contacts.contacts[i]->frame[2] << "," <<
+                                  focused_contacts.contacts[i]->frame[3] << "," <<
+                                  focused_contacts.contacts[i]->frame[4] << "," <<
+                                  focused_contacts.contacts[i]->frame[5] << "," <<
+                                  focused_contacts.contacts[i]->frame[6] << "," <<
+                                  focused_contacts.contacts[i]->frame[7] << "," <<
+                                  focused_contacts.contacts[i]->frame[8] << std::endl;
+
+    }
+
+    FocusedContacts focused_contacts_2(m, d, obj_body_indices, 2);  // 2 for including ee_position
+
+
+    std::cout << "focused contacts with robot type 2:" << std::endl;
+    // compare the values
+    for (int i=0; i<focused_contacts_2.contacts.size(); i++)
+    {
+        std::cout << "contact " << i << std::endl;
+        std::cout << "body_id1: " << focused_contacts_2.contacts[i]->body_id1 << std::endl;
+        std::cout << "body_id2: " << focused_contacts_2.contacts[i]->body_id2 << std::endl;
+        std::cout << "body_type1: " << focused_contacts_2.contacts[i]->body_type1 << std::endl;
+        std::cout << "body_type2: " << focused_contacts_2.contacts[i]->body_type2 << std::endl;
+        std::cout << "pos: " << focused_contacts_2.contacts[i]->pos[0] << "," <<
+                                focused_contacts_2.contacts[i]->pos[1] << "," <<
+                                focused_contacts_2.contacts[i]->pos[2] << std::endl;
+        std::cout << "frame: " << focused_contacts_2.contacts[i]->frame[0] << "," <<
+                                  focused_contacts_2.contacts[i]->frame[1] << "," <<
+                                  focused_contacts_2.contacts[i]->frame[2] << "," <<
+                                  focused_contacts_2.contacts[i]->frame[3] << "," <<
+                                  focused_contacts_2.contacts[i]->frame[4] << "," <<
+                                  focused_contacts_2.contacts[i]->frame[5] << "," <<
+                                  focused_contacts_2.contacts[i]->frame[6] << "," <<
+                                  focused_contacts_2.contacts[i]->frame[7] << "," <<
+                                  focused_contacts_2.contacts[i]->frame[8] << std::endl;
+
+    }
+}
+
+void test_vel_to_contact_modes()
+{
+    Matrix4d start_T, goal_T;
+    int obj_bid = mj_name2id(m, mjOBJ_BODY, "object_0");
+    int goal_bid = mj_name2id(m, mjOBJ_BODY, "goal");
+    pos_mat_to_transform(d->xpos+obj_bid*3, d->xmat+obj_bid*9, start_T);
+    pos_mat_to_transform(d->xpos+goal_bid*3, d->xmat+goal_bid*9, goal_T);
+
+    Vector6d unit_twist;
+    double twist_theta;
+
+    std::cout << "pose to twist:" << std::endl;
+    std::cout << "start_T: " << std::endl;
+    std::cout << start_T << std::endl;
+    std::cout << "goal_T: " << std::endl;
+    std::cout << goal_T << std::endl;
+
+    pose_to_twist(start_T, goal_T, unit_twist, twist_theta);
+    Contacts contacts(m, d);
+    std::vector<int> cs_modes;
+    std::vector<std::vector<int>> ss_modes;
+
+    std::cout << "direct for loop" << std::endl;
+    // compare the values
+    for (int i=0; i<contacts.contacts.size(); i++)
+    {
+        std::cout << "Mujoco contact: " << std::endl;
+        std::cout << "body_id1: " << m->geom_bodyid[d->contact[i].geom1] << std::endl;
+        std::cout << "body_id2: " << m->geom_bodyid[d->contact[i].geom2] << std::endl;
+        std::cout << "body_type1: " << mj_id2name(m, mjOBJ_BODY, m->body_rootid[m->geom_bodyid[d->contact[i].geom1]]) << std::endl;
+        std::cout << "body_type1: " << mj_id2name(m, mjOBJ_BODY, m->body_rootid[m->geom_bodyid[d->contact[i].geom2]]) << std::endl;
+        std::cout << "pos: " << d->contact[i].pos[0] << "," <<
+                                d->contact[i].pos[1] << "," <<
+                                d->contact[i].pos[2] << std::endl;
+        std::cout << "frame: " << d->contact[i].frame[0] << "," <<
+                                  d->contact[i].frame[1] << "," <<
+                                  d->contact[i].frame[2] << "," <<
+                                  d->contact[i].frame[3] << "," <<
+                                  d->contact[i].frame[4] << "," <<
+                                  d->contact[i].frame[5] << "," <<
+                                  d->contact[i].frame[6] << "," <<
+                                  d->contact[i].frame[7] << "," <<
+                                  d->contact[i].frame[8] << std::endl;
+
+        Vector6d twist1 = VectorXd::Zero(6);
+        Vector6d twist2 = VectorXd::Zero(6);
+        if (contacts.contacts[i]->body_type1 == BodyType::OBJECT)  twist1 = unit_twist*twist_theta;
+        if (contacts.contacts[i]->body_type2 == BodyType::OBJECT)  twist2 = unit_twist*twist_theta;
+
+        int cs_mode;
+        std::vector<int> ss_mode;
+        vel_to_contact_mode(contacts.contacts[i], twist1, twist2, 2, cs_mode, ss_mode);
+
+        std::cout << "cs_mode: " << cs_mode << std::endl;
+        std::cout << "ss_mode: " << std::endl;
+        for (int j=0; j<ss_mode.size(); j++)  std::cout << ss_mode[j] << ", " << std::endl;
+
+        cs_modes.push_back(cs_mode);
+        ss_modes.push_back(ss_mode);
+    }
+
+
+    std::vector<int> new_cs_modes;
+    std::vector<std::vector<int>> new_ss_modes;
+    int bid = mj_name2id(m, mjOBJ_BODY, "object_0");
+    std::unordered_map<int, Vector6d> twists;
+    twists[bid] = unit_twist*twist_theta;
+    vel_to_contact_modes(contacts, twists, 2, new_cs_modes, new_ss_modes);
+
+    std::cout << "comparing cs_modes and ss_modes: " << std::endl;
+    std::cout << "old cs_modes: " << std::endl;
+    for (int i=0; i<cs_modes.size(); i++)
+    {
+        std::cout << cs_modes[i] << " ";
+    }
+    std::cout << std::endl;
+
+    std::cout << "old ss_modes: " << std::endl;
+    for (int i=0; i<ss_modes.size(); i++)
+    {
+        for (int j=0; j<ss_modes[i].size(); j++)
+        {
+            std::cout << ss_modes[i][j] << " ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+
+
+    std::cout << "new cs_modes: " << std::endl;
+    for (int i=0; i<new_cs_modes.size(); i++)
+    {
+        std::cout << new_cs_modes[i] << " ";
+    }
+    std::cout << std::endl;
+
+    std::cout << "new ss_modes: " << std::endl;
+    for (int i=0; i<new_ss_modes.size(); i++)
+    {
+        for (int j=0; j<new_ss_modes[i].size(); j++)
+        {
+            std::cout << new_ss_modes[i][j] << " ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+
+
+
+}
+
 
 int main(void)
 {
@@ -285,20 +504,20 @@ int main(void)
                                         "arm_left_joint_5_r",
                                         "arm_left_joint_6_b"};
 
-    double q[15] = {0, 1.75, 0.8, 0, -0.66, 0, 0, 0, 
-                    1.75, 0.8, 0, -0.66, 0, 0, 0};
+    // double q[15] = {0, 1.75, 0.8, 0, -0.66, 0, 0, 0, 
+    //                 1.75, 0.8, 0, -0.66, 0, 0, 0};
 
-    double lb[8] = { -1.58, -3.13, -1.9, -2.95, -2.36, -3.13, -1.9, -3.13 }; /* lower bounds */
-    double ub[8] = { 1.58, 3.13, 1.9, 2.95, 2.36, 3.13, 1.9, 3.13 }; /* upper bounds */
+    // double lb[8] = { -1.58, -3.13, -1.9, -2.95, -2.36, -3.13, -1.9, -3.13 }; /* lower bounds */
+    // double ub[8] = { 1.58, 3.13, 1.9, 2.95, 2.36, 3.13, 1.9, 3.13 }; /* upper bounds */
 
-    const char* link_name = "arm_left_link_6_b";
-    double pose[7];
+    // const char* link_name = "arm_left_link_6_b";
+    // double pose[7];
 
 
     // obtain target pose from xml
-    int target_bid = mj_name2id(m, mjOBJ_BODY, "target");
-    int jnt_idx = m->body_jntadr[target_bid];
-    int qadr = m->jnt_qposadr[jnt_idx];
+    // int target_bid = mj_name2id(m, mjOBJ_BODY, "target");
+    // int jnt_idx = m->body_jntadr[target_bid];
+    // int qadr = m->jnt_qposadr[jnt_idx];
 
 
     // inverse_kinematics(joint_names, q, link_name, pose);
@@ -306,12 +525,57 @@ int main(void)
 
     mjtNum total_simstart = d->time;
 
-
     mj_forward(m, d);
+
+    int obj_target_id = mj_name2id(m, mjOBJ_BODY, "object_0");
+    Vector3d obj_target_pos;
+    obj_target_pos[0] = d->xpos[3*obj_target_id];
+    obj_target_pos[1] = d->xpos[3*obj_target_id+1];
+    obj_target_pos[2] = d->xpos[3*obj_target_id+2];
+
+    Vector3d obj_target_half_size(0.04, 0.1, 0.08);
+    Vector6d sol;
+    Vector3d robot_pos;
+
+    Vector3d ll(obj_target_pos[0]-0.04, obj_target_pos[1]-0.1, obj_target_pos[2]-obj_target_half_size[2]);
+    Vector3d ul(obj_target_pos[0]-0.04, obj_target_pos[1]+0.1, obj_target_pos[2]+obj_target_half_size[2]);
+
+    // uniform_sample_3d(ll, ul, robot_pos);
+
 
     test_contact();
 
     test_ss_mode();
+
+
+
+    robot_pos[0] = obj_target_pos[0] - 0.04; //0.7000660902822591; 
+    robot_pos[1] = obj_target_pos[1];
+    robot_pos[2] = obj_target_pos[2];
+
+    int robot_bid = mj_name2id(m, mjOBJ_BODY, "ee_position");
+    std::cout << "joint number: " << m->body_jntnum[robot_bid] << std::endl;
+    int qadr1 = m->jnt_qposadr[m->body_jntadr[robot_bid]];
+    int qadr2 = m->jnt_qposadr[m->body_jntadr[robot_bid]+1];
+    int qadr3 = m->jnt_qposadr[m->body_jntadr[robot_bid]+2];
+
+
+    // int jnt_idx1 = mj_name2id(m, )
+
+    std::cout << "joint type: " << m->jnt_type[m->body_jntadr[robot_bid]] << std::endl;
+
+    d->qpos[qadr1] = robot_pos[0];
+    d->qpos[qadr2] = robot_pos[1];
+    d->qpos[qadr3] = robot_pos[2];
+
+
+    mj_forward(m, d);
+
+
+    test_focused_contacts();
+
+    test_vel_to_contact_modes();
+
 
     /* visualize the trajectory */
     while (!glfwWindowShouldClose(window))

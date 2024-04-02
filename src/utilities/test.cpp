@@ -142,7 +142,7 @@ void test_qr_col_pivot()
     {
         VectorXd x = qr.solve(span.col(i));
         // check whether it is solved
-        bool solved = span.col(i).isApprox(mat_interest*x);
+        span.col(i).isApprox(mat_interest*x);
         std::cout << "mat*x: " << std::endl;
         std::cout << mat_interest*x << std::endl;
         std::cout << "b: " << std::endl;

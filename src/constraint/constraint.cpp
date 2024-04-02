@@ -47,7 +47,7 @@
  * @param cs_mode: 1 means NOT in contact. 0 means in contact.
  * @param ss_mode 
  */
-void contact_constraint(mjModel* m, mjData* d, Contact* contact, 
+void contact_constraint(const mjModel* m, const mjData* d, const Contact* contact, 
                              const int cs_mode, const std::vector<int> ss_mode,
                              MatrixXd& Ce, VectorXd& ce0, int& ce_size,
                              MatrixXd& Ci, VectorXd& ci0, int& ci_size,
@@ -260,7 +260,7 @@ void contact_constraint(mjModel* m, mjData* d, Contact* contact,
                     Ci(ci_padding+0,6*2+1+K+i) = 1; ci_padding += 1;
                     Ci(ci_padding+0,6*2+1+2*K+1+K+i) = 1; ci_padding += 1;
                     Ce(ce_padding+0,6*2+1+i) = 1; ce_padding += 1;
-                    Ce(ce_padding+0,6*2+1+2*K+1+i) = 1; ce_padding = 1;
+                    Ce(ce_padding+0,6*2+1+2*K+1+i) = 1; ce_padding += 1;
                 }
                 else if (ss_mode[i] == 0)
                 {
@@ -284,6 +284,11 @@ void contact_constraint(mjModel* m, mjData* d, Contact* contact,
     // std::cout << "ci_size: " << ci_size << std::endl;
 
     std::cout << "after adding contact matrix" << std::endl;
+    std::cout << "ce_padding: " << ce_padding << std::endl;
+    std::cout << "ce_size: " << ce_size << std::endl;
+    std::cout << "ci_size: " << ci_size << std::endl;
+    std::cout << "K: " << K << std::endl;
+
     Ce.conservativeResize(ce_size,6+6+2+K*4);  Ci.conservativeResize(ci_size,6+6+2+K*4);
     std::cout << "Ce: " << std::endl;
     std::cout << Ce << std::endl;
@@ -400,9 +405,9 @@ void contact_constraint(mjModel* m, mjData* d, Contact* contact,
  * @param ai0 
  * @param ai_size 
  */
-void total_constraints(mjModel* m, mjData* d, std::vector<int>& robot_v_indices,
-                       std::vector<int>& obj_body_indices,
-                       Contacts& contacts, 
+void total_constraints(const mjModel* m, const mjData* d, const std::vector<int>& robot_v_indices,
+                       const std::vector<int>& obj_body_indices,
+                       const Contacts& contacts, 
                        const std::vector<int> cs_modes, 
                        const std::vector<std::vector<int>> ss_modes,
                        MatrixXd& Ae, VectorXd& ae0, int& ae_size,
@@ -454,14 +459,16 @@ void total_constraints(mjModel* m, mjData* d, std::vector<int>& robot_v_indices,
             Ae.block(ae_offset, nq+idx*6, ce_size, 6) = Ce.block(0, 0, ce_size, 6);
             Ai.block(ai_offset, nq+idx*6, ci_size, 6) = Ci.block(0, 0, ci_size, 6);
         }
-        else if (body_idx1 == -2)
+        else if (body_idx1 == -2) // robot link, and apply to all config
         {
             // robot: need to multiply by the inverse of jacobian
             // TODO
             // assuming Mujoco jacobian is in the world coord system. 
             // original constraint is: AV = 0.
             // change to robot config, it is: AJq=0
-            double jacp[3*m->nv], jacr[3*m->nv];
+            // double jacp[3*m->nv], jacr[3*m->nv];
+            double* jacp = new double[3*m->nv];
+            double* jacr = new double[3*m->nv];
 
             mj_jacBody(m, d, jacp, jacr, contacts.contacts[i]->body_id1);
             MatrixXd J_s(6,nq);  // in spatial frame assumed. Shape: 6xnv
@@ -478,7 +485,23 @@ void total_constraints(mjModel* m, mjData* d, std::vector<int>& robot_v_indices,
             std::cout << J_s << std::endl;
             Ae.block(ae_offset, 0, ce_size, nq) = Ce.block(0, 0, ce_size, 6) * J_s;
             Ai.block(ai_offset, 0, ci_size, nq) = Ci.block(0, 0, ci_size, 6) * J_s;
+            delete[] jacp;
+            delete[] jacr;
         }
+        else if (body_idx1 == -3) // robot end-effector pose, when we want to separately consider them
+                                  // this only applies when we feed robot_v_indices as arbitrary list of 6 values
+        {
+            Ae.block(ae_offset, 0, ce_size, 6) = Ce.block(0, 0, ce_size, 6);
+            Ai.block(ai_offset, 0, ci_size, 6) = Ci.block(0, 0, ci_size, 6);            
+        }
+        else if (body_idx1 == -4) // robot end-effector position, when we want to separately consider them
+                                  // this only applies when we feed robot_v_indices as a list of 6 values
+        {
+            // here the rotational component is assumed to have no effect
+            Ae.block(ae_offset, 0, ce_size, 3) = Ce.block(0, 0, ce_size, 3);
+            Ai.block(ai_offset, 0, ci_size, 3) = Ci.block(0, 0, ci_size, 3);
+        }
+        // for env, we assume V_env = 0, and force torque automatically balanced
 
         if (body_idx2 >= 0)
         {
@@ -489,9 +512,12 @@ void total_constraints(mjModel* m, mjData* d, std::vector<int>& robot_v_indices,
         }
         else if (body_idx2 == -2)
         {
+            // this is robot link
             // robot: need to multiply by the inverse of jacobian
             // TODO
-            double jacp[3*m->nv], jacr[3*m->nv];
+            // double jacp[3*m->nv], jacr[3*m->nv];
+            double* jacp = new double[3*m->nv];
+            double* jacr = new double[3*m->nv];
 
             mj_jacBody(m, d, jacp, jacr, contacts.contacts[i]->body_id2);
             MatrixXd J_s(6,nq);  // in spatial frame assumed. Shape: 6xnv
@@ -508,7 +534,23 @@ void total_constraints(mjModel* m, mjData* d, std::vector<int>& robot_v_indices,
             std::cout << J_s << std::endl;
             Ae.block(ae_offset, 0, ce_size, nq) = Ce.block(0, 6, ce_size, 6) * J_s;
             Ai.block(ai_offset, 0, ci_size, nq) = Ci.block(0, 6, ci_size, 6) * J_s;
+            delete[] jacp;
+            delete[] jacr;
         }
+        else if (body_idx2 == -3) // robot end-effector pose, when we want to separately consider them
+                                  // this only applies when we feed robot_v_indices as arbitrary list of 6 values
+        {
+            Ae.block(ae_offset, 0, ce_size, 6) = Ce.block(0, 6, ce_size, 6); // offset by 6 since it's the second obj in the contact
+            Ai.block(ai_offset, 0, ci_size, 6) = Ci.block(0, 6, ci_size, 6);            
+        }
+        else if (body_idx2 == -4) // robot end-effector position, when we want to separately consider them
+                                  // this only applies when we feed robot_v_indices as a list of 6 values
+        {
+            // here the rotational component is assumed to have no effect
+            Ae.block(ae_offset, 0, ce_size, 3) = Ce.block(0, 6, ce_size, 3); // offset by 6 since it's the second obj in the contact
+            Ai.block(ai_offset, 0, ci_size, 3) = Ci.block(0, 6, ci_size, 3);
+        }
+        // for env, we assume V_env = 0, and force torque automatically balanced
 
 
         // handle contact. contact offset: robot_nv + 6*n_obj + i*2*(1+K*2)  [vel: 1+K*2, force: 1+K*2]
@@ -575,10 +617,10 @@ void total_constraints(mjModel* m, mjData* d, std::vector<int>& robot_v_indices,
  * @param G 
  * @param g0 
  */
-void vel_objective(mjModel* m, mjData* d, 
-                   std::vector<int>& robot_v_indices,
-                   std::vector<Vector6d>& target_vs,
-                   std::vector<int>& active_vs,  // if the vel is active
+void vel_objective(const mjModel* m, const mjData* d, 
+                   const std::vector<int>& robot_v_indices,
+                   const std::vector<Vector6d>& target_vs,
+                   const std::vector<int>& active_vs,  // if the vel is active
                    const int ncon, const int K,  // K: ss mode
                    MatrixXd& G, VectorXd& g0)
 {

@@ -57,8 +57,8 @@ int main() {
     std::cout << "Original matrix:\n" << matrix << std::endl;
 
     // Resize the matrix to a smaller size
-    int new_rows = 2;
-    int new_cols = 2;
+    // int new_rows = 2;
+    // int new_cols = 2;
 
     // matrix.resize(new_rows, new_cols);
     // matrix.conservativeResize(new_rows, new_cols);

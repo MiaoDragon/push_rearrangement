@@ -1,12 +1,17 @@
-#include <string>
+/**
+ * @file pendulum_example.cpp
+ * @author your name (you@domain.com)
+ * @brief 
+ * test the mpc controller in the pendulum example
+ * @version 0.1
+ * @date 2024-03-20
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
 
-#include <mujoco/mujoco.h>
-#include "mjpc/task.h"
-#include "mjpc/states/state.h"
-#include "mjpc/planners/sampling/planner.h"
-#include "mjpc/planners/sampling/policy.h"
-#include "mjpc/threadpool.h"
 #include <cmath>
+#include <limits>
 #include <vector>
 #include <queue>
 #include <string>
@@ -25,58 +30,106 @@
 #include "../utilities/utilities.h"
 #include "../utilities/sample.h"
 
+#include "mujoco_mppi_intvel.h"
+#include "mujoco_mppi.h"
+#include "task.h"
+#include "policies.h"
+#include "mppi.h"
 
 
-using namespace mjpc;
+class CartpoleMPPI : public MujocoMPPI<VectorXd>
+{
+  public:
+    using MujocoMPPI::MujocoMPPI;
 
-
-class Cartpole : public Task {
- public:
-  std::string Name() const override;
-  std::string XmlPath() const override;
-
-  class ResidualFn : public BaseResidualFn {
-   public:
-    explicit ResidualFn(const Cartpole* task) : BaseResidualFn(task) {}
-    // ------- Residuals for cartpole task ------
-    //   Number of residuals: 4
-    //     Residual (0): distance from vertical
-    //     Residual (1): distance from goal
-    //     Residual (2): angular velocity
-    //     Residual (3): control
-    // ------------------------------------------
-    void Residual(const mjModel* model, const mjData* data,
-                  double* residual) const override
+    void set_data_from_sensor(const VectorXd& sensordata, mjData*& d)
     {
-        // ---------- Vertical ----------
-        residual[0] = std::cos(data->qpos[1]) - 1;
-
-        // ---------- Centered ----------
-        residual[1] = data->qpos[0] - parameters_[0];
-
-        // ---------- Velocity ----------
-        residual[2] = data->qvel[1];
-
-        // ---------- Control ----------
-        residual[3] = data->ctrl[0];        
+        d = mj_makeData(m);
+        // sensordata: orientation of the ball joint. qw, qx, qy, qz
+        //             position of the end-effector: x, y, z
+        // obtain the current activation from the orientation
+        int joint_idx = mj_name2id(m, mjOBJ_JOINT, "slider");
+        // std::cout << "joint number: " << m->jnt_
+        int jnt_qpos_idx = m->jnt_qposadr[joint_idx];
+        d->qpos[jnt_qpos_idx+0] = sensordata[0];
+        joint_idx = mj_name2id(m, mjOBJ_JOINT, "hinge_1");
+        jnt_qpos_idx = m->jnt_qposadr[joint_idx];
+        d->qpos[jnt_qpos_idx+0] = sensordata[1];
     }
-  };
+    void get_state_from_data(const mjData* d, VectorXd& state)
+    {
+        // state: slider position, hinge position
+        state.resize(2);
+        int joint_idx = mj_name2id(m, mjOBJ_JOINT, "slider");
+        int jnt_qpos_idx = m->jnt_qposadr[joint_idx];
+        state[0] = d->qpos[jnt_qpos_idx+0];
+        joint_idx = mj_name2id(m, mjOBJ_JOINT, "hinge_1");
+        jnt_qpos_idx = m->jnt_qposadr[joint_idx];
+        state[1] = d->qpos[jnt_qpos_idx+0];
+    }
+  protected:
+    void set_sensor_from_data(const mjData* d, VectorXd& sensor)
+    {
+        sensor.resize(2);
+        int sensor_idx = mj_name2id(m, mjOBJ_SENSOR, "slider_pos");
+        int sensor_adr = m->sensor_adr[sensor_idx];
+        sensor[0] = d->sensordata[sensor_adr];
 
-  Cartpole() : residual_(this) {}
-
- protected:
-  std::unique_ptr<mjpc::ResidualFn> ResidualLocked() const override {
-    return std::make_unique<ResidualFn>(this);
-  }
-  ResidualFn* InternalResidual() override { return &residual_; }
-
- private:
-  ResidualFn residual_;
+        sensor_idx = mj_name2id(m, mjOBJ_SENSOR, "hinge_pos");
+        sensor_adr = m->sensor_adr[sensor_idx];
+        sensor[1] = d->sensordata[sensor_adr];
+    }
 };
 
+class CartpoleTask : public ControlTask<VectorXd>
+{
+  public:
+    using ControlTask::ControlTask;
 
+    double goal_hinge;
+    double goal_pos;
 
+    void sensor_to_state(const VectorXd& sensor, VectorXd& state)
+    {
+        state.resize(2);
+        // state: slider position, hinge
+        state[0] = sensor[0];
+        state[1] = sensor[1];
+    }
 
+    double cost(const VectorXd& state, const VectorXd& sensor, const VectorXd& control)
+    {
+        // check state bound
+        bool in_bound = true;
+        in_bound &= compare_vector_smaller_eq(state_lb, state);
+        in_bound &= compare_vector_smaller_eq(state, state_ub);
+        in_bound &= compare_vector_smaller_eq(control_lb, control);
+        in_bound &= compare_vector_smaller_eq(control, control_ub);
+
+        double res = 0;
+        double bound_cost = 10.0;
+        if (!in_bound)
+        {
+            res += bound_cost;
+        }
+
+        // task: track the hinge and position
+        res += (sensor[0] - goal_pos)*(sensor[0] - goal_pos);
+        res += (sensor[1] - goal_hinge)*(sensor[1] - goal_hinge);
+        return res;        
+    }
+
+    double terminal_cost(const VectorXd& state, const VectorXd& sensor, const VectorXd& control)
+    {
+        return 0;
+    }
+
+    void set_goal(const double goal_hinge, const double goal_pos)
+    {
+        this->goal_hinge = goal_hinge; this->goal_pos = goal_pos;
+    }
+
+};
 
 // MuJoCo data structures
 mjModel* m = NULL;                  // MuJoCo model
@@ -167,7 +220,7 @@ int main(void)
 {
 
     // read mujoco scene
-    std::string filename = "/home/yinglong/Documents/research/task_motion_planning/non-prehensile-manipulation/project/push_rearrangement/xmls/3d_pendulum.xml";
+    std::string filename = "/home/yinglong/Documents/research/task_motion_planning/non-prehensile-manipulation/project/push_rearrangement/xmls/cartpole_task.xml";
     const char* c = filename.c_str();
     char loadError[1024] = "";
 
@@ -205,52 +258,74 @@ int main(void)
     glfwSetMouseButtonCallback(window, mouse_button);
     glfwSetScrollCallback(window, scroll);
 
+    mj_forward(m, d);
 
-    std::vector<const char*> act_names{"axis_x", "axis_y", "axis_z"};
+    std::vector<const char*> act_names{"slide"};
+    VectorXd x_ll(2), x_ul(2), u_ll(1), u_ul(1);
 
-    std::vector<int> pos_act_indices, vel_ctrl_indices;
+    std::vector<int> ctrl_indices;
     
+    /* obtain range for x and u */
+    for (int i=0; i<act_names.size(); i++)
+    {
+        int act_id = mj_name2id(m, mjOBJ_ACTUATOR, act_names[i]);
+        ctrl_indices.push_back(act_id);
 
+        u_ll[i] = m->actuator_ctrlrange[i*2];
+        u_ul[i] = m->actuator_ctrlrange[i*2+1];
+    }
+    x_ll[0] = -1.8; x_ul[0] = 1.8;
+    x_ll[1] = -std::numeric_limits<double>::infinity(); x_ul[1] = std::numeric_limits<double>::infinity();
+
+
+    int H = 100, N = 10;
+    double default_sigma = 1.0;
+    double dt = 0.01;
+
+    // PendulumMPPI controller(H, N, default_sigma, nominal_x, nominal_u, x_ll, x_ul, u_ll, u_ul);
+    // controller.set_pos_act_indices(pos_act_indices);
+    // controller.set_vel_ctrl_indices(vel_ctrl_indices);
+    // controller.set_dt(0.01);//m->opt.timestep);
+
+
+    CartpoleTask task(x_ll, x_ul, u_ll, u_ul);
+    int goal_bid = mj_name2id(m, mjOBJ_BODY, "cart_goal");
+    // compute the position, and track it
+    task.set_goal(0, d->xpos[goal_bid*3+0]);
+
+    KnotControlPolicy policy(H*dt, 1, 0, 30, 1, u_ll, u_ul);
+    CartpoleMPPI controller(N, H, dt, default_sigma, &task, &policy, m);
     mjtNum total_simstart = d->time;
 
 
-    Cartpole task;
-    SamplingPlanner planner;
-    planner.Initialize(m, task);
-
-
-
-    mj_forward(m, d);
     for (int i=0; i<10; i++) mj_step(m, d);  // try to stablize
 
     total_simstart = d->time;
     // traj_idx = 0;
-
-    ThreadPool thread(10);
-
-    State start_state;
-    start_state.Initialize(m);
-    
-
     int step_idx = 0;
-    int H = 100, N = 10;
-    double default_sigma = 0.3;
-
-    double control[3];
-
     /* visualize the trajectory */
     while (!glfwWindowShouldClose(window))
     {
         // if (d->time - total_simstart < 1)
         {
-            start_state.Set(m, d);
-            planner.SetState(start_state);
-            planner.OptimizePolicy(H, thread);
-            planner.ActionFromPolicy(control, nullptr, d->time);
+            step_idx++;
+            int sensor_idx = mj_name2id(m, mjOBJ_SENSOR, "slider_pos");
+            int sensor_adr = m->sensor_adr[sensor_idx];
+            double* sensordata = d->sensordata;
+            VectorXd sensor(2);
+            sensor[0] = d->sensordata[sensor_adr];
+            sensor_idx = mj_name2id(m, mjOBJ_SENSOR, "hinge_pos");
+            sensor_adr = m->sensor_adr[sensor_idx];
+            sensor[1] = d->sensordata[sensor_adr];
+            
+            // sensordata[0] = 30.0/180 * M_PI;
+            VectorXd control;
+            controller.step(sensor, control);
+            policy.shift_by_time(m->opt.timestep);
 
-            for (int i=0; i<3; i++)
+            for (int i=0; i<ctrl_indices.size(); i++)
             {
-                d->ctrl[i] = control[i];
+                d->ctrl[ctrl_indices[i]] = control[i];
             }
 
             mj_step(m, d);
