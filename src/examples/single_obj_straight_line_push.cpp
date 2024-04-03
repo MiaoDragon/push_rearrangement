@@ -276,9 +276,9 @@ int straight_line_plan_1(const Vector3d& robot_pos, Vector6d& sol)
     VectorXd ce, ci;
     // int ce_size, ci_size;
 
-    std::vector<const char*> joint_names{"root_x",
-                                        "root_y",
-                                        "root_z"};
+    std::vector<const char*> joint_names{"ee_position_x",
+                                        "ee_position_y",
+                                        "ee_position_z"};
     std::vector<int> robot_v_indices;
     for (int i=0; i<joint_names.size(); i++)
     {

@@ -201,7 +201,11 @@ int main(void)
             Matrix4d obj_pose;
             obj_pose_traj->interpolate(1.0/n_samples*traj_idx, obj_pose);
             Vector3d robot_pos;
+            std::cout << "interpolation t: " << 1.0/n_samples*traj_idx << std::endl;
             robot_ee_traj->interpolate(1.0/n_samples*traj_idx, robot_pos);
+            std::cout << "robot_pos: " << std::endl;
+            std::cout << robot_pos << std::endl;
+
             // std::cout << "robot_pos: " << std::endl;
             // std::cout << robot_pos << std::endl;
             // int obj_jntnum = m->body_jntnum[obj_bid];

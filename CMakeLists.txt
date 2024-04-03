@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.16.3)
 set (CMAKE_CXX_STANDARD 17)
 
 project(push_rearrangement)
-set(CMAKE_VERBOSE_MAKEFILE ON)
+# set(CMAKE_VERBOSE_MAKEFILE ON)
 
 
 # find_package(mujoco REQUIRED)
@@ -13,8 +13,12 @@ find_package(OsqpEigen REQUIRED)
 
 message(STATUS "Eigen3 found at: ${EIGEN3_INCLUDE_DIR}")
 
-
 add_subdirectory(src/external)
+
+message(STATUS "compile options: ${AVX_COMPILE_OPTIONS}")
+
+add_compile_options(${MJPC_COMPILE_OPTIONS})  # include the external libraries compile option
+add_link_options(${MJPC_LINK_OPTIONS})
 
 
 set(mjpc_libs libmjpc)

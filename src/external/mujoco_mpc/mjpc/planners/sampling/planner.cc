@@ -363,6 +363,47 @@ void SamplingPlanner::Rollouts(int num_trajectory, int horizon,
           state.data(), time, mocap.data(), userdata.data(), horizon);
     });
   }
+
+  // print out the rollout after trajectroy
+  std::cout << "after rollout, cost: " << std::endl;
+  for (int i=0; i<num_trajectory; i++)
+  {
+    std::cout << "trajectory[" << i << "]: " << std::endl;
+    std::cout << "action: " << std::endl;
+    for (int ti=0; ti<trajectory[i].horizon-1; ti++)
+    {
+        std::cout << trajectory[i].actions[ti*3+0];
+        std::cout << " ";
+        std::cout << trajectory[i].actions[ti*3+1];
+        std::cout << " ";
+        std::cout << trajectory[i].actions[ti*3+2];
+        std::cout << std::endl;
+    }
+    // std::cout << "state: " << std::endl;
+    // for (int ti=0; ti<s.trajectory[i].horizon-1; ti++)
+    // {
+    //     std::cout << s.trajectory[i].actions[ti*3+0];
+    //     std::cout << " ";
+    //     std::cout << s.trajectory[i].actions[ti*3+1];
+    //     std::cout << " ";
+    //     std::cout << s.trajectory[i].actions[ti*3+2];
+    //     std::cout << std::endl;
+    // }
+    std::cout << "residual: " << std::endl;
+    for (int ti=0; ti<trajectory[i].horizon-1; ti++)
+    {
+        for (int j=0; j<task->num_residual; j++)
+        {
+            std::cout << trajectory[i].residual[ti*task->num_residual+j];
+            std::cout << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    std::cout << "total return: " << trajectory[i].total_return << std::endl;
+  }
+
+
   pool.WaitCount(count_before + num_trajectory);
   pool.ResetCount();
 }

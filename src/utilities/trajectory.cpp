@@ -53,5 +53,5 @@ PositionTrajectory::PositionTrajectory(const Vector3d& start, const Vector3d& un
 }
 void PositionTrajectory::interpolate(double t, Vector3d &res) const
 {
-    res = start + t*unit_vec;
+    res = start + t*distance*unit_vec;
 }

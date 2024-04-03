@@ -26,5 +26,6 @@ target_link_libraries(point_pusher_mpc
                     PUBLIC
                     ${project_required_libraries}
                     ${project_link_libraries}
+                    push-obj-steer
 )
 

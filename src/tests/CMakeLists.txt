@@ -1,4 +1,4 @@
-find_package(mujoco REQUIRED)
+# find_package(mujoco REQUIRED)
 find_package(Eigen3 REQUIRED)
 
 
@@ -8,6 +8,8 @@ else()
     message("cannot find mujoco")
 endif()
 # link_libraries(mujoco::mujoco Eigen3::Eigen)
+# message(STATUS "mujoco found at: ${MJ_INCLUDE_DIR}")
+# message(STATUS "mujoco config at: ${mujoco_DIR}")
 
 
 set(example_required_libraries
@@ -17,10 +19,9 @@ set(example_required_libraries
 
 set(example_include_dirs 
     "${PROJECT_SOURCE_DIR}"
-    "${MJ_INCLUDE_DIR}"
+    # "${MJ_INCLUDE_DIR}"
     "/usr/local/include/"
     )
-
 
 set(example_link_dirs 
     "${PROJECT_BINARY_DIR}" 

@@ -77,6 +77,10 @@ void contact_constraint(const mjModel* m, const mjData* d, const Contact* contac
     mj_to_transform(m, d, contact->body_id1, g1);
     mj_to_transform(m, d, contact->body_id2, g2);
 
+    std::cout << "contact_constraint" << std::endl;
+    std::cout << "body 1: " << mj_id2name(m, mjOBJ_BODY, contact->body_id1) << std::endl;
+    std::cout << "body 2: " << mj_id2name(m, mjOBJ_BODY, contact->body_id2) << std::endl;
+
     std::cout << "g1: " << std::endl;
     std::cout << g1 << std::endl;
 

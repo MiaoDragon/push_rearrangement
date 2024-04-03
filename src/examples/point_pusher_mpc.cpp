@@ -1,28 +1,18 @@
 /**
- * @file point_pusher_mpc.cpp
+ * @file obj_steer_test.cpp
  * @author your name (you@domain.com)
  * @brief 
- * given the start and goal poses for a single object
- * first use optimization to obtain robot trajectory and object trajectory
- * then track it using MPC.
+ * TODO:
+ * [] testing single object steering from start to goal, with end-effector position as contact
+ * [] multi-thread testing
+ *
  * @version 0.1
- * @date 2024-04-01
+ * @date 2024-04-02
  * 
  * @copyright Copyright (c) 2024
  * 
  */
-
-
-#include <OsqpEigen/Constants.hpp>
-#include <OsqpEigen/Solver.hpp>
 #include <cmath>
-#include <algorithm>
-#include <Eigen/Sparse>
-
-#include "../constraint/constraint.h"
-#include "../contact/contact.h"
-#include "../utilities/utilities.h"
-
 #include <mujoco/mjmodel.h>
 #include <mujoco/mjrender.h>
 #include <mujoco/mjtnum.h>
@@ -30,12 +20,27 @@
 #include <mujoco/mjdata.h>
 #include <mujoco/mjvisualize.h>
 #include <GLFW/glfw3.h>
-#include <eiquadprog/eiquadprog-fast.hpp>
-#include <eiquadprog/eiquadprog.hpp>
-#include <ostream>
 
-#include "OsqpEigen/OsqpEigen.h"
+#include <ctime>
+#include <iostream>
+#include <fstream>
+#include <memory>
+#include <vector>
+#include <string>
+#include <cstring>
 
+#include <mjpc/interface.h>
+#include <mjpc/task.h>
+#include <mjpc/planners/sampling/planner.h>
+#include <mjpc/states/state.h>
+#include <mjpc/threadpool.h>
+#include <mjpc/norm.h>
+
+
+#include "../control/pusher_mpc_task.h"
+#include "../task_planner/obj_steer.h"
+#include "../utilities/utilities.h"
+#include "../utilities/trajectory.h"
 
 // MuJoCo data structures
 mjModel* m = NULL;                  // MuJoCo model
@@ -53,12 +58,6 @@ bool button_right =  false;
 double lastx = 0;
 double lasty = 0;
 
-int t=0;  // 0: rotate around x-axis. 1, 2 similar
-// const double axis_list[3][3] = {{1,0,0},{0,1,0},{0,0,1}};
-
-std::vector<Matrix4d> obj_trajectory;
-Vector3d robot_in_obj;  // robot contact point
-int traj_idx = 0;
 
 // keyboard callback
 void keyboard(GLFWwindow* window, int key, int scancode, int act, int mods) {
@@ -66,9 +65,7 @@ void keyboard(GLFWwindow* window, int key, int scancode, int act, int mods) {
   if (act==GLFW_PRESS && key==GLFW_KEY_BACKSPACE) {
     mj_resetData(m, d);
     mj_forward(m, d);
-
     // also reset the trajectory
-
   }
 }
 
@@ -127,286 +124,6 @@ void scroll(GLFWwindow* window, double xoffset, double yoffset) {
 }
 
 
-
-// Eigen::quaternion: w,x,y,z for init
-// mujoco also provides functions such as mju_quat2Mat
-
-double v_max = 0.01;
-double r_max = 15*M_PI/180;
-double duration = 0;
-double dt = 0.01;
-
-/* use the same vel. Solve QP once and use it for all. Keep robot contact unchanged. */
-
-int straight_line_plan_1(const Vector3d& robot_pos, Vector6d& sol)
-{
-    int robot_bid = mj_name2id(m, mjOBJ_BODY, "pointmass");
-    std::cout << "joint number: " << m->body_jntnum[robot_bid] << std::endl;
-    int qadr1 = m->jnt_qposadr[m->body_jntadr[robot_bid]];
-    int qadr2 = m->jnt_qposadr[m->body_jntadr[robot_bid]+1];
-    int qadr3 = m->jnt_qposadr[m->body_jntadr[robot_bid]+2];
-
-
-    // int jnt_idx1 = mj_name2id(m, )
-
-    std::cout << "joint type: " << m->jnt_type[m->body_jntadr[robot_bid]] << std::endl;
-
-    d->qpos[qadr1] = robot_pos[0];
-    d->qpos[qadr2] = robot_pos[1];
-    d->qpos[qadr3] = robot_pos[2];
-    mj_forward(m, d);
-
-    // set up contacts and modes
-    Contacts contacts(m, d);
-    std::vector<int> cs_modes;
-    std::vector<std::vector<int>> ss_modes;
-
-    // obtain start and goal poses
-    Matrix4d start_T, goal_T;
-    int obj_bid = mj_name2id(m, mjOBJ_BODY, "object_0");
-    int goal_bid = mj_name2id(m, mjOBJ_BODY, "goal");
-    pos_mat_to_transform(d->xpos+obj_bid*3, d->xmat+obj_bid*9, start_T);
-    pos_mat_to_transform(d->xpos+goal_bid*3, d->xmat+goal_bid*9, goal_T);
-
-    Vector6d unit_twist;
-    double twist_theta;
-
-    std::cout << "pose to twist:" << std::endl;
-    std::cout << "start_T: " << std::endl;
-    std::cout << start_T << std::endl;
-    std::cout << "goal_T: " << std::endl;
-    std::cout << goal_T << std::endl;
-
-    pose_to_twist(start_T, goal_T, unit_twist, twist_theta);
-
-
-    // compare the values
-    for (int i=0; i<contacts.contacts.size(); i++)
-    {
-        std::cout << "Mujoco contact: " << std::endl;
-        std::cout << "body_id1: " << m->geom_bodyid[d->contact[i].geom1] << std::endl;
-        std::cout << "body_id2: " << m->geom_bodyid[d->contact[i].geom2] << std::endl;
-        std::cout << "body_type1: " << mj_id2name(m, mjOBJ_BODY, m->body_rootid[m->geom_bodyid[d->contact[i].geom1]]) << std::endl;
-        std::cout << "body_type1: " << mj_id2name(m, mjOBJ_BODY, m->body_rootid[m->geom_bodyid[d->contact[i].geom2]]) << std::endl;
-        std::cout << "pos: " << d->contact[i].pos[0] << "," <<
-                                d->contact[i].pos[1] << "," <<
-                                d->contact[i].pos[2] << std::endl;
-        std::cout << "frame: " << d->contact[i].frame[0] << "," <<
-                                  d->contact[i].frame[1] << "," <<
-                                  d->contact[i].frame[2] << "," <<
-                                  d->contact[i].frame[3] << "," <<
-                                  d->contact[i].frame[4] << "," <<
-                                  d->contact[i].frame[5] << "," <<
-                                  d->contact[i].frame[6] << "," <<
-                                  d->contact[i].frame[7] << "," <<
-                                  d->contact[i].frame[8] << std::endl;
-
-        Vector6d twist1 = VectorXd::Zero(6);
-        Vector6d twist2 = VectorXd::Zero(6);
-        if (contacts.contacts[i]->body_type1 == BodyType::OBJECT)  twist1 = unit_twist*twist_theta;
-        if (contacts.contacts[i]->body_type2 == BodyType::OBJECT)  twist2 = unit_twist*twist_theta;
-
-        int cs_mode;
-        std::vector<int> ss_mode;
-        vel_to_contact_mode(contacts.contacts[i], twist1, twist2, 2, cs_mode, ss_mode);
-
-        std::cout << "cs_mode: " << cs_mode << std::endl;
-        std::cout << "ss_mode: " << std::endl;
-        for (int j=0; j<ss_mode.size(); j++)  std::cout << ss_mode[j] << ", " << std::endl;
-
-        cs_modes.push_back(cs_mode);
-        ss_modes.push_back(ss_mode);
-    }
-
-    MatrixXd Ce, Ci;
-    VectorXd ce, ci;
-    // int ce_size, ci_size;
-
-    std::vector<const char*> joint_names{"root_x",
-                                        "root_y",
-                                        "root_z"};
-    std::vector<int> robot_v_indices;
-    for (int i=0; i<joint_names.size(); i++)
-    {
-        int jnt_idx = mj_name2id(m, mjOBJ_JOINT, joint_names[i]);
-        robot_v_indices.push_back(m->jnt_dofadr[jnt_idx]);
-    }
-    int nobj = 1;
-    std::vector<int> obj_body_indices;
-    for (int i=0; i<nobj; i++)
-    {
-        char obj_name[20];
-        sprintf(obj_name, "object_%d", i);
-        std::cout << "object name: " << obj_name << std::endl;
-        obj_body_indices.push_back(mj_name2id(m, mjOBJ_BODY, obj_name));
-    }
-
-
-    MatrixXd Ae, Ai;
-    VectorXd ae0, ai0; 
-    int ae_size, ai_size;
-    total_constraints(m, d, robot_v_indices, obj_body_indices, contacts, cs_modes, ss_modes,
-                        Ae, ae0, ae_size, Ai, ai0, ai_size);
-
-
-    std::cout << "ae_size: " << ae_size << std::endl;
-    std::cout << "ai_size: " << ae_size << std::endl;
-    std::cout << "Ae: " << std::endl;
-    std::cout << Ae << std::endl;
-    std::cout << "ae0: " << std::endl;
-    std::cout << ae0 << std::endl;
-    std::cout << "Ai: " << std::endl;
-    std::cout << Ai << std::endl;
-    std::cout << "ai0: " << std::endl;
-    std::cout << ai0 << std::endl;
-
-    // decision varaible size: Ae.cols()
-    int n_vars = Ae.cols();
-    // MatrixXd G = MatrixXd::Zero(n_vars, n_vars);
-    MatrixXd G = MatrixXd::Identity(n_vars, n_vars);
-
-    VectorXd g0 = VectorXd::Zero(n_vars);
-    // MatrixXd Ce = Ae.transpose();
-    // VectorXd ce0 = ae0;
-    // MatrixXd Ci = Ai.transpose();
-    // VectorXd ci0 = ai0;
-
-    std::vector<Vector6d> target_vs;
-    target_vs.push_back(unit_twist*twist_theta);
-    // Vector6d custom_target_v;
-    // custom_target_v << 0.01,0,0,0,0,0;
-    // target_vs.push_back(custom_target_v);
-
-    std::vector<int> active_vs;
-    active_vs.push_back(1);
-
-    std::cout << "target_v: " << std::endl;
-    std::cout << unit_twist*twist_theta << std::endl;
-    vel_objective(m, d, robot_v_indices, target_vs, active_vs, cs_modes.size(), ss_modes[0].size(), G, g0);
-
-
-    VectorXd x = VectorXd::Zero(n_vars);
-
-    // remove redundant constrs
-    remove_linear_redundant_constrs(Ae, ae0);
-
-    // remove_linear_redundant_constrs(Ai, ai0);
-
-    std::cout << "updated AE: " << std::endl;
-    std::cout << Ae << std::endl;
-    std::cout << "updated ae0: " << std::endl;
-    std::cout << ae0 << std::endl;
-
-    eiquadprog::solvers::EiquadprogFast solver;
-    int status = solver.solve_quadprog(G, g0, Ae, ae0, Ai, ai0, x);
-    solver.reset(0, 0, 0);  // this is important to avoid memory issue
-
-    // double f = Eigen::solve_quadprog(G, g0, Ae.transpose(), ae0, Ai.transpose(), ai0, x);
-    // std::cout << "f: " << f << std::endl;
-    // check the result: qdot, v1, v2, ..., vn, C1, C2, ...
-    // std::cout << "x: " << std::endl;
-    // std::cout << x << std::endl;
-    std::cout << "status: " << status << std::endl;
-
-    std::cout << "solution: " << x << std::endl;
-
-    std::cout << "cost: " << 0.5 * x.transpose() * G * x + g0.transpose() * x << std::endl;;
-
-    // obtain the object vel
-    sol = x.segment(joint_names.size(), 6);
-
-    std::cout << "returning" << std::endl;
-    return status;
-
-
-    /* obtain contact information. Set the CS and SS modes  */
-
-
-
-    // solve the QP for the twist
-
-
-
-}
-
-
-
-void sample_robot_pos_loop()
-{
-    // move the robot to the front of the object
-    int obj_target_id = mj_name2id(m, mjOBJ_BODY, "object_0");
-    Vector3d obj_target_pos;
-    obj_target_pos[0] = d->xpos[3*obj_target_id];
-    obj_target_pos[1] = d->xpos[3*obj_target_id+1];
-    obj_target_pos[2] = d->xpos[3*obj_target_id+2];
-
-    Vector3d obj_target_half_size(0.04, 0.1, 0.08);
-    Vector6d sol;
-    Vector3d robot_pos;
-
-    while (true)
-    {
-        // sample robot position until we find a solution
-
-
-        // TODO: sample in all faces of the object
-        Vector3d ll(obj_target_pos[0]-0.04, obj_target_pos[1]-0.1, obj_target_pos[2]-obj_target_half_size[2]);
-        Vector3d ul(obj_target_pos[0]-0.04, obj_target_pos[1]+0.1, obj_target_pos[2]+obj_target_half_size[2]);
-
-        // uniform_sample_3d(ll, ul, robot_pos);
-
-
-        robot_pos[0] = obj_target_pos[0] - 0.04; //0.7000660902822591; 
-        robot_pos[1] = obj_target_pos[1];
-        robot_pos[2] = obj_target_pos[2];
-
-        int status = straight_line_plan_1(robot_pos, sol);
-        std::cout << "out of functino" << std::endl;
-        if (status == 0)
-        {
-            std::cout << "SUCCESS!" << std::endl;
-            std::cout << "robot position: " << std::endl;
-            std::cout << robot_pos << std::endl;            
-            break;
-        }
-    }
-
-    // generate trajectory using the object vel
-    /**
-     * @brief 
-     * t time pose: exp([v,w]_x*theta_dot*t) pose_0
-     * Need to check: if we iteratively apply exp([v,w]_x*theta_dot*dt) pose, would it be the same?
-     */
-
-    Matrix4d obj_start_pose, world_in_obj_start;
-    pos_mat_to_transform(d->xpos+3*obj_target_id, d->xmat+9*obj_target_id, obj_start_pose);
-    world_in_obj_start = obj_start_pose.inverse();
-    robot_in_obj = world_in_obj_start.block<3,3>(0,0) * robot_pos + world_in_obj_start.block<3,1>(0,3);
-
-    obj_trajectory.resize(0);
-    obj_trajectory.push_back(obj_start_pose);
-
-    int n_steps = duration / dt;
-    dt = duration / n_steps;
-    for (int i=0; i<n_steps; i++)
-    {
-        Vector6d dx = dt * sol;  // [v,w]
-        double twist_theta;
-        Vector6d unit_twist;
-        twist_to_unit_twist(dx, unit_twist, twist_theta);
-        // Vector6d unit_twist;
-        // if (twist_theta <= 1e-7)
-        // {
-        //     unit_twist(3) = 0; unit_twist(4) = 0; unit_twist(5) = 1;
-        //     // unit_twist;
-        // }
-        Matrix4d dT;
-        twist_to_SE3(unit_twist, twist_theta, dT);
-        Matrix4d new_pose = dT*obj_trajectory.back();
-        obj_trajectory.push_back(new_pose);
-    }
-}
-
 int main(void)
 {
 
@@ -450,92 +167,130 @@ int main(void)
     glfwSetScrollCallback(window, scroll);
 
 
-    std::vector<const char*> joint_names{"torso_joint_b1",
-                                        "arm_left_joint_1_s",
-                                        "arm_left_joint_1_s",
-                                        "arm_left_joint_2_l",
-                                        "arm_left_joint_3_e",
-                                        "arm_left_joint_4_u",
-                                        "arm_left_joint_5_r",
-                                        "arm_left_joint_6_b"};
-
-    // double q[15] = {0, 1.75, 0.8, 0, -0.66, 0, 0, 0, 
-    //                 1.75, 0.8, 0, -0.66, 0, 0, 0};
-
-    // double lb[8] = { -1.58, -3.13, -1.9, -2.95, -2.36, -3.13, -1.9, -3.13 }; /* lower bounds */
-    // double ub[8] = { 1.58, 3.13, 1.9, 2.95, 2.36, 3.13, 1.9, 3.13 }; /* upper bounds */
-
-    // const char* link_name = "arm_left_link_6_b";
-    // double pose[7];
-
-
-    // obtain target pose from xml
-    // int target_bid = mj_name2id(m, mjOBJ_BODY, "target");
-    // int jnt_idx = m->body_jntadr[target_bid];
-    // int qadr = m->jnt_qposadr[jnt_idx];
-
-
-    // inverse_kinematics(joint_names, q, link_name, pose);
-
-
-    mjtNum total_simstart = d->time;
-
 
     mj_forward(m, d);
     for (int i=0; i<10; i++) mj_step(m, d);  // try to stablize
 
-    // test_contact_constraint();
-    // test_total_constraint();
-    // test_solve_total_constraint();
-    // test_solve_total_constraint_1_loop();
-    Vector3d robot_pos(0.7399660902822591, -0.05971188968363312, 1.035);
-    sample_robot_pos_loop();
+    int obj_bid = mj_name2id(m, mjOBJ_BODY, "object_0");
+    int obj_goal_bid = mj_name2id(m, mjOBJ_BODY, "goal");
+    Matrix4d obj_start_T, obj_goal_T;
+    mj_to_transform(m, d, obj_bid, obj_start_T);
+    mj_to_transform(m, d, obj_goal_bid, obj_goal_T);
+    
+    Vector3d ee_contact_in_obj;
+    ee_contact_in_obj[0] = -0.04;//obj_start_pos[0] - 0.04; //0.7000660902822591; 
+    ee_contact_in_obj[1] = 0;//obj_start_pos[1];
+    ee_contact_in_obj[2] = 0;//obj_start_pos[2];
 
-    traj_idx = 0;
+    Vector3d robot_ee_v;
+    Vector6d obj_twist;
+    std::shared_ptr<PositionTrajectory> robot_ee_traj = nullptr;
+    std::shared_ptr<PoseTrajectory> obj_pose_traj = nullptr;
 
+    bool status = single_obj_steer_ee_position(m, d, obj_bid, obj_start_T, obj_goal_T, ee_contact_in_obj, 
+                                               robot_ee_v, obj_twist, robot_ee_traj, obj_pose_traj);
+    if (status)
+    {
+        std::cout << "planning success!" << std::endl;
+    }
+    else
+    {
+        std::cout << "planning failed" << std::endl;
+    }
+
+
+    std::vector<int> robot_qpos_ids = {};
+    robot_qpos_ids.push_back(m->jnt_qposadr[mj_name2id(m, mjOBJ_JOINT, "ee_position_x")]);
+    robot_qpos_ids.push_back(m->jnt_qposadr[mj_name2id(m, mjOBJ_JOINT, "ee_position_y")]);
+    robot_qpos_ids.push_back(m->jnt_qposadr[mj_name2id(m, mjOBJ_JOINT, "ee_position_z")]);
+    std::vector<int> obj_bids = {};
+    obj_bids.push_back(mj_name2id(m, mjOBJ_BODY, "object_0"));
+
+    // set robot initial position
+    Vector3d robot_start_position = obj_start_T.block<3,3>(0,0) * ee_contact_in_obj + obj_start_T.block<3,1>(0,3);
+    d->qpos[robot_qpos_ids[0]] = robot_start_position[0];
+    d->qpos[robot_qpos_ids[1]] = robot_start_position[1];
+    d->qpos[robot_qpos_ids[2]] = robot_start_position[2];
+    mj_forward(m, d);
+
+    double duration = 5; // seconds
+
+    /* set up control task */
+    int num_term = 9;
+    std::vector<int> dim_norm_residual = {1, 1, 1, 1, 1, 1, 1, 1, 1};
+    std::vector<mjpc::NormType> norm = {mjpc::NormType::kQuadratic, mjpc::NormType::kQuadratic, mjpc::NormType::kQuadratic, 
+                                        mjpc::NormType::kQuadratic, mjpc::NormType::kQuadratic, mjpc::NormType::kQuadratic,
+                                        mjpc::NormType::kQuadratic, mjpc::NormType::kQuadratic, mjpc::NormType::kQuadratic};
+    std::vector<int> num_norm_parameter;
+    std::vector<double> norm_parameter = {};
+    for (int i=0; i<num_term; i++)
+    {
+        num_norm_parameter.push_back(mjpc::NormParameterDimension(norm[i]));
+    }
+    std::vector<double> weight = {1, 1, 1, 1, 1, 1, 1, 1, 1};
+    std::vector<double> parameters = {};
+    double risk = 0.0;
+
+    EEPositionPusherTask task(num_term, dim_norm_residual, norm, num_norm_parameter, norm_parameter, weight,
+                              parameters, risk, obj_pose_traj, robot_ee_traj, duration, 
+                              robot_qpos_ids, obj_bids);
+
+    /* set up controller */
+    mjModel* plan_m = mj_copyModel(nullptr, m);
+    plan_m->opt.timestep = 0.01;
+    plan_m->opt.integrator = mjtIntegrator::mjINT_EULER;
+    mjpc::SamplingPlanner planner;
+    planner.Initialize(plan_m, task);
+    planner.Allocate();
+    mjpc::State state;
+    state.Initialize(plan_m);
+    state.Allocate(plan_m);
+    state.Reset();
+    mjpc::ThreadPool pool(10);
+
+
+    /* start execution */
+    int n_samples = ceil(duration / m->opt.timestep);
+    int traj_idx = 0;
+    int step_idx = 0;
+
+    // double render_prob = 0.2;
+    // std::random_device rd;
+    // std::mt19937 gen(rd());
+    // std::uniform_real_distribution<> dis(0., 1.);
+    // std::chrono::time_point<std::chrono::system_clock> time_now = std::chrono::system_clock::now();
+
+    task.set_start_time(d->time);
     /* visualize the trajectory */
     while (!glfwWindowShouldClose(window))
     {
-        if (d->time - total_simstart < 1)
+        // auto duration = std::chrono::system_clock::now()-time_now;
+        // std::cout << "time: " << std::chrono::duration_cast<std::chrono::milliseconds>(duration).count()/1000.0 << std::endl;
+        // time_now = std::chrono::system_clock::now();
+
+        if (step_idx % 1 == 0)
         {
-            // set the object trajectory
-            Matrix4d obj_pose = obj_trajectory[traj_idx];
-            Vector3d robot_pos = obj_pose.block<3,3>(0,0) * robot_in_obj + obj_pose.block<3,1>(0,3);
-            // std::cout << "robot_pos: " << std::endl;
-            // std::cout << robot_pos << std::endl;
-            int obj_bid = mj_name2id(m, mjOBJ_BODY, "object_0");
-            // int obj_jntnum = m->body_jntnum[obj_bid];
-            int obj_jntadr = m->body_jntadr[obj_bid];
-            int obj_qposadr = m->jnt_qposadr[obj_jntadr];  // x,y,z,qw,qx,qy,qz
-            Quaterniond obj_q(obj_pose.block<3,3>(0,0));
-            d->qpos[obj_qposadr+0] = obj_pose(0,3);
-            d->qpos[obj_qposadr+1] = obj_pose(1,3);
-            d->qpos[obj_qposadr+2] = obj_pose(2,3);
-            d->qpos[obj_qposadr+3+0] = obj_q.w();
-            d->qpos[obj_qposadr+3+1] = obj_q.x();
-            d->qpos[obj_qposadr+3+2] = obj_q.y();
-            d->qpos[obj_qposadr+3+3] = obj_q.z();
+            // compute the residual and publish to sensordata
+            task.Residual(plan_m, d, d->sensordata);
+            // compute the cost
+            std::cout << "cost: " << task.CostValue(d->sensordata) << std::endl;
 
-            // robot pose
-            int robot_bid = mj_name2id(m, mjOBJ_BODY, "pointmass");
-            // int robot_jntadr = m->body_jntadr[robot_bid];
-            // int robot_qposadr = m->jnt_qposadr[robot_jntadr];  // x,y,z
+            state.Set(plan_m, d);
+            planner.SetState(state);
 
-            int qadr1 = m->jnt_qposadr[m->body_jntadr[robot_bid]];
-            int qadr2 = m->jnt_qposadr[m->body_jntadr[robot_bid]+1];
-            int qadr3 = m->jnt_qposadr[m->body_jntadr[robot_bid]+2];
+            for (int opt_iter=0; opt_iter<1; opt_iter++)
+            {
+                planner.OptimizePolicy(100, pool);
+            }
 
-            d->qpos[qadr1] = robot_pos[0];
-            d->qpos[qadr2] = robot_pos[1];
-            d->qpos[qadr3] = robot_pos[2];
+            planner.ActionFromPolicy(d->ctrl, &state.state()[0], d->time);
 
-            // mj_step(m, d);
-            mj_forward(m, d);
-
-            traj_idx = (traj_idx + 1) % obj_trajectory.size();
-
+            mj_step(m, d);
+            step_idx += 1;
         }
-        if (traj_idx % 10 != 0) continue;
+
+        if (step_idx % 10 != 0) continue;
+
         // get framebuffer viewport
         mjrRect viewport = {0,0,0,0};
         glfwGetFramebufferSize(window, &viewport.width, &viewport.height);

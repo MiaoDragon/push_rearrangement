@@ -86,6 +86,10 @@ findorfetch(
   mujoco::platform_ui_adapter
   EXCLUDE_FROM_ALL
 )
+#####################################
+# UPDATED Here: we don't fetch the specific version of mujoco, but use the one installed
+# find_package(mujoco REQUIRED)
+#####################################
 
 # TODO(nimrod): Update to the latest version of abseil, or use the one defined
 # by MuJoCo, once grpc fix their build issues.
@@ -209,8 +213,13 @@ if(NOT TARGET lodepng)
   endif()
 endif()
 
-set(MJPC_COMPILE_OPTIONS "${AVX_COMPILE_OPTIONS}" "${EXTRA_COMPILE_OPTIONS}")
-set(MJPC_LINK_OPTIONS "${EXTRA_LINK_OPTIONS}")
+
+set(MJPC_COMPILE_OPTIONS "${AVX_COMPILE_OPTIONS}" "${EXTRA_COMPILE_OPTIONS}" PARENT_SCOPE)
+set(MJPC_LINK_OPTIONS "${EXTRA_LINK_OPTIONS}" PARENT_SCOPE)
+
+message(STATUS "mujoco_mpc compile options: ${MJPC_COMPILE_OPTIONS}")
+message(STATUS "mujoco_mpc link options: ${EXTRA_LINK_OPTIONS}")
+
 
 add_subdirectory(mjpc)
 

@@ -109,10 +109,10 @@ bool single_obj_steer_ee_position(const mjModel* m, mjData* d,  // d is updated 
     obj_twist = x.segment(3,6);
 
     // since we assume that the velocity is so that when t=1 goal is achieved, it is just the delta to goal
-    robot_ee_traj = std::make_shared<PositionTrajectory>(robot_pos, robot_pos + robot_ee_v);
+    robot_ee_traj = std::make_unique<PositionTrajectory>(robot_pos, robot_pos + robot_ee_v);
     Vector6d obj_twist_unit;
     double obj_theta;
     twist_to_unit_twist(obj_twist, obj_twist_unit, obj_theta);
-    obj_pose_traj = std::make_shared<PoseTrajectory>(start_T, obj_twist_unit, obj_theta);
+    obj_pose_traj = std::make_unique<PoseTrajectory>(start_T, obj_twist_unit, obj_theta);
     return true;
 }
