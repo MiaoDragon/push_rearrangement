@@ -133,6 +133,7 @@ void Trajectory::NoisyRollout(
   mju_copy(data->qvel, state + nq, nv);
   mju_copy(data->act, state + nq + nv, na);
 
+
   // set initial time
   times[0] = time;
   data->time = time;
@@ -143,6 +144,13 @@ void Trajectory::NoisyRollout(
     // set action
     policy(DataAt(actions, t * nu), DataAt(states, t * dim_state), data->time);
     mju_copy(data->ctrl, DataAt(actions, t * nu), nu);
+
+    // std::cout << "trajectory rollout... actions at time " << t << std::endl;
+    // for (int ui=0; ui<nu; ui++)
+    // {
+    //     std::cout << data->ctrl[ui] << " " << std::endl;
+    // }
+    // std::cout << std::endl;
 
     // apply perturbation
     if (xfrc_std > 0) {
@@ -167,6 +175,44 @@ void Trajectory::NoisyRollout(
     // record trace
     GetTraces(DataAt(trace, t * 3 * task->num_trace), model, data,
               task->num_trace);
+
+
+    // // print out the state
+    // int jnt_qpos_idx = model->jnt_qposadr[mj_name2id(model, mjOBJ_JOINT, "ee_position_x")];
+
+    // std::cout << "ee_position qpos: " << std::endl;
+    // {
+    //     std::cout << data->qpos[jnt_qpos_idx+0];
+    //     std::cout << " ";
+    //     std::cout << data->qpos[jnt_qpos_idx+1];
+    //     std::cout << " ";
+    //     std::cout << data->qpos[jnt_qpos_idx+2];
+    //     std::cout << std::endl;
+    // }
+
+    // std::cout << "ee_position qvel: " << std::endl;
+    // int jnt_qvel_idx = model->jnt_dofadr[mj_name2id(model, mjOBJ_JOINT, "ee_position_x")];
+    // {
+    //     std::cout << data->qvel[jnt_qvel_idx+0];
+    //     std::cout << " ";
+    //     std::cout << data->qvel[jnt_qvel_idx+1];
+    //     std::cout << " ";
+    //     std::cout << data->qvel[jnt_qvel_idx+2];
+    //     std::cout << std::endl;
+    // }
+
+
+    // std::cout << "residual: " << std::endl;
+    // {
+    //     for (int j=0; j<task->num_residual; j++)
+    //     {
+    //         std::cout << data->sensordata[j];
+    //         std::cout << " ";
+    //     }
+    //     std::cout << std::endl;
+    // }
+
+
 
     // check for step warnings
     if ((failure |= CheckWarnings(data))) {

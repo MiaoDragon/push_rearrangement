@@ -45,7 +45,7 @@ bool single_obj_steer_ee_position(const mjModel* m, mjData* d,
                                   const int& obj_body_id, // automatically already root id of object
                                   const Matrix4d& start_T, const Matrix4d& goal_T, 
                                   const Vector3d& ee_contact_in_obj,
-                                  Vector3d& robot_ee_v, Vector6d& obj_twist,
+                                  Vector6d& obj_twist,
                                   std::shared_ptr<PositionTrajectory>& robot_ee_traj,
                                   std::shared_ptr<PoseTrajectory>& obj_pose_traj);
 

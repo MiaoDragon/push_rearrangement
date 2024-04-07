@@ -173,13 +173,12 @@ int main(void)
     ee_contact_in_obj[1] = 0;//obj_start_pos[1];
     ee_contact_in_obj[2] = 0;//obj_start_pos[2];
 
-    Vector3d robot_ee_v;
     Vector6d obj_twist;
     std::shared_ptr<PositionTrajectory> robot_ee_traj = nullptr;
     std::shared_ptr<PoseTrajectory> obj_pose_traj = nullptr;
 
     bool status = single_obj_steer_ee_position(m, d, obj_bid, obj_start_T, obj_goal_T, ee_contact_in_obj, 
-                                               robot_ee_v, obj_twist, robot_ee_traj, obj_pose_traj);
+                                               obj_twist, robot_ee_traj, obj_pose_traj);
     if (status)
     {
         std::cout << "planning success!" << std::endl;

@@ -77,26 +77,26 @@ void contact_constraint(const mjModel* m, const mjData* d, const Contact* contac
     mj_to_transform(m, d, contact->body_id1, g1);
     mj_to_transform(m, d, contact->body_id2, g2);
 
-    std::cout << "contact_constraint" << std::endl;
-    std::cout << "body 1: " << mj_id2name(m, mjOBJ_BODY, contact->body_id1) << std::endl;
-    std::cout << "body 2: " << mj_id2name(m, mjOBJ_BODY, contact->body_id2) << std::endl;
+    // std::cout << "contact_constraint" << std::endl;
+    // std::cout << "body 1: " << mj_id2name(m, mjOBJ_BODY, contact->body_id1) << std::endl;
+    // std::cout << "body 2: " << mj_id2name(m, mjOBJ_BODY, contact->body_id2) << std::endl;
 
-    std::cout << "g1: " << std::endl;
-    std::cout << g1 << std::endl;
+    // std::cout << "g1: " << std::endl;
+    // std::cout << g1 << std::endl;
 
-    std::cout << "g2: " << std::endl;
-    std::cout << g2 << std::endl;
+    // std::cout << "g2: " << std::endl;
+    // std::cout << g2 << std::endl;
 
 
     // obtain g1 in contact, g2 in contact
     Matrix4d cg1, cg2, wc, cw;
     pos_mat_to_transform(contact->pos, contact->frame, wc);
-    std::cout << "wc: " << std::endl;
-    std::cout << wc << std::endl;
+    // std::cout << "wc: " << std::endl;
+    // std::cout << wc << std::endl;
     cw = wc.inverse();
 
-    std::cout << "cw: " << std::endl;
-    std::cout << cw << std::endl;
+    // std::cout << "cw: " << std::endl;
+    // std::cout << cw << std::endl;
     cg1 = cw * g1;
     cg2 = cw * g2;
 
@@ -132,12 +132,12 @@ void contact_constraint(const mjModel* m, const mjData* d, const Contact* contac
     Matrix6d adj1, adj2, adj;
     adjoint(cg1, adj1); adjoint(cg2, adj2);
     adjoint(cw, adj);
-    std::cout << "adj1: " << std::endl;
-    std::cout << adj1 << std::endl;
-    std::cout << "adj2: " << std::endl;
-    std::cout << adj2 << std::endl;
-    std::cout << "adj: " << std::endl;
-    std::cout << adj << std::endl;
+    // std::cout << "adj1: " << std::endl;
+    // std::cout << adj1 << std::endl;
+    // std::cout << "adj2: " << std::endl;
+    // std::cout << adj2 << std::endl;
+    // std::cout << "adj: " << std::endl;
+    // std::cout << adj << std::endl;
 
     // Ce.block<3,6>(ce_padding+0,0) = adj1.block<3,6>(0,0);
     // Ce.block<3,6>(ce_padding+0,6) = -adj2.block<3,6>(0,0);
@@ -287,17 +287,17 @@ void contact_constraint(const mjModel* m, const mjData* d, const Contact* contac
     // std::cout << "ce_size: " << ce_size << std::endl;
     // std::cout << "ci_size: " << ci_size << std::endl;
 
-    std::cout << "after adding contact matrix" << std::endl;
-    std::cout << "ce_padding: " << ce_padding << std::endl;
-    std::cout << "ce_size: " << ce_size << std::endl;
-    std::cout << "ci_size: " << ci_size << std::endl;
-    std::cout << "K: " << K << std::endl;
+    // std::cout << "after adding contact matrix" << std::endl;
+    // std::cout << "ce_padding: " << ce_padding << std::endl;
+    // std::cout << "ce_size: " << ce_size << std::endl;
+    // std::cout << "ci_size: " << ci_size << std::endl;
+    // std::cout << "K: " << K << std::endl;
 
     Ce.conservativeResize(ce_size,6+6+2+K*4);  Ci.conservativeResize(ci_size,6+6+2+K*4);
-    std::cout << "Ce: " << std::endl;
-    std::cout << Ce << std::endl;
-    std::cout << "Ci: " << std::endl;
-    std::cout << Ci << std::endl;
+    // std::cout << "Ce: " << std::endl;
+    // std::cout << Ce << std::endl;
+    // std::cout << "Ci: " << std::endl;
+    // std::cout << Ci << std::endl;
 
 
     /* force balance constraint */
@@ -339,8 +339,8 @@ void contact_constraint(const mjModel* m, const mjData* d, const Contact* contac
     r[0] = wc(0,3) - d->xipos[contact->body_id1*3+0];
     r[1] = wc(1,3) - d->xipos[contact->body_id1*3+1];
     r[2] = wc(2,3) - d->xipos[contact->body_id1*3+2];
-    std::cout << "body 1, r: " << std::endl;
-    std::cout << r << std::endl;
+    // std::cout << "body 1, r: " << std::endl;
+    // std::cout << r << std::endl;
 
     Matrix3d r_hat;
     hat_operator(r, r_hat);
@@ -359,8 +359,8 @@ void contact_constraint(const mjModel* m, const mjData* d, const Contact* contac
     r[1] = wc(1,3) - d->xipos[contact->body_id2*3+1];
     r[2] = wc(2,3) - d->xipos[contact->body_id2*3+2];
     hat_operator(r, r_hat);
-    std::cout << "body 2, r: " << std::endl;
-    std::cout << r << std::endl;
+    // std::cout << "body 2, r: " << std::endl;
+    // std::cout << r << std::endl;
 
     axis[0] = 0; axis[1] = 0; axis[2] = 1;
     Te2.block<3,1>(0,2*6+1+K*2) = r_hat * wRc * axis;
@@ -372,20 +372,20 @@ void contact_constraint(const mjModel* m, const mjData* d, const Contact* contac
         Te2.block<3,1>(0,2*6+1+K*2+1+K+i) = r_hat * wRc * axis;
     }
 
-    std::cout << "wc: " << std::endl;
-    std::cout << wc << std::endl;
+    // std::cout << "wc: " << std::endl;
+    // std::cout << wc << std::endl;
 
-    std::cout << "Fe1: " << std::endl;
-    std::cout << Fe1 << std::endl;
+    // std::cout << "Fe1: " << std::endl;
+    // std::cout << Fe1 << std::endl;
 
-    std::cout << "Fe2: " << std::endl;
-    std::cout << Fe2 << std::endl;
+    // std::cout << "Fe2: " << std::endl;
+    // std::cout << Fe2 << std::endl;
 
-    std::cout << "Te1: " << std::endl;
-    std::cout << Te1 << std::endl;
+    // std::cout << "Te1: " << std::endl;
+    // std::cout << Te1 << std::endl;
 
-    std::cout << "Te2: " << std::endl;
-    std::cout << Te2 << std::endl;
+    // std::cout << "Te2: " << std::endl;
+    // std::cout << Te2 << std::endl;
 
 
 }
@@ -439,7 +439,7 @@ void total_constraints(const mjModel* m, const mjData* d, const std::vector<int>
 
     int ae_offset=0, ai_offset=0;
 
-    std::cout << "nobj: " << nobj << std::endl;
+    // std::cout << "nobj: " << nobj << std::endl;
 
     for (int i=0; i<cs_modes.size(); i++)
     {
@@ -652,8 +652,8 @@ void vel_objective(const mjModel* m, const mjData* d,
     G_diagonal.tail(ncon*2*(1+2*K)).setConstant(epsilon_lambda);
     G.diagonal() = G_diagonal;
 
-    std::cout << "G: " << std::endl;
-    std::cout << G << std::endl;
-    std::cout << "g0: " << std::endl;
-    std::cout << g0 << std::endl;
+    // std::cout << "G: " << std::endl;
+    // std::cout << G << std::endl;
+    // std::cout << "g0: " << std::endl;
+    // std::cout << g0 << std::endl;
 }

@@ -17,6 +17,8 @@ target_link_libraries(single_obj_straight_line_push
                     PUBLIC
                     ${project_required_libraries}
                     ${project_link_libraries}
+                    push-obj-steer
+
 )
 
 

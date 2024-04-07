@@ -99,6 +99,9 @@ class RankedPlanner : public Planner {
 
   // sets the nth candidate to the active policy.
   virtual void CopyCandidateToPolicy(int candidate) = 0;
+
+  virtual void UpdateNominalPolicy(int horizon) = 0;  // resample nominal policy
+
 };
 
 }  // namespace mjpc

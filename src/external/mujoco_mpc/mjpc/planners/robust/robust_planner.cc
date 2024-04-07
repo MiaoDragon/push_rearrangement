@@ -89,6 +89,9 @@ void RobustPlanner::SetState(const State& state) {
 }
 
 void RobustPlanner::OptimizePolicy(int horizon, ThreadPool& pool) {
+  // resample nominal policy to current time
+  delegate_->UpdateNominalPolicy(horizon);
+
   // get the best N candidates
   int ncandidates =
       delegate_->OptimizePolicyCandidates(ncandidates_, horizon, pool);
@@ -155,6 +158,7 @@ void RobustPlanner::OptimizePolicy(int horizon, ThreadPool& pool) {
 
   delegate_->CopyCandidateToPolicy(best_candidate);
 }
+
 
 void RobustPlanner::NominalTrajectory(int horizon, ThreadPool& pool) {
   delegate_->NominalTrajectory(horizon, pool);

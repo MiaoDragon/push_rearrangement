@@ -26,6 +26,7 @@ set(control_link_dirs
 include_directories(${control_include_dirs})
 link_libraries(${control_required_libraries})
 
+
 add_executable(cartpole_example cartpole_mjpc_example.cpp)
 target_link_libraries(cartpole_example
                     PUBLIC
@@ -33,6 +34,20 @@ target_link_libraries(cartpole_example
                     ${control_required_libraries}
 )
 
+add_executable(point_mjpc_reach_goal_example point_mjpc_reach_goal_example.cpp)
+target_link_libraries(point_mjpc_reach_goal_example
+                    PUBLIC
+                    ${project_required_libraries}
+                    ${control_required_libraries}
+)
+add_executable(point_mjpc_track_example point_mjpc_track_example.cpp)
+target_link_libraries(point_mjpc_track_example
+                    PUBLIC
+                    ${project_required_libraries}
+                    ${control_required_libraries}
+                    push-utils
+                    truncated_normal
+)
 
 # add_library(mujoco-mppi 
 #     mujoco_mppi.cpp

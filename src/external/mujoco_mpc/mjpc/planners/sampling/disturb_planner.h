@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef MJPC_PLANNERS_SAMPLING_PLANNER_H_
-#define MJPC_PLANNERS_SAMPLING_PLANNER_H_
+#pragma once
 
 #include <mujoco/mujoco.h>
 
@@ -22,25 +21,32 @@
 #include <vector>
 
 #include "mjpc/planners/planner.h"
-#include "mjpc/planners/sampling/policy.h"
 #include "mjpc/states/state.h"
 #include "mjpc/trajectory.h"
+
+#include "disturb_policy.h"
 
 namespace mjpc {
 
 // sampling planner limits
-inline constexpr int MinSamplingSplinePoints = 1;
-inline constexpr int MaxSamplingSplinePoints = 36;
-inline constexpr double MinNoiseStdDev = 0.0;
-inline constexpr double MaxNoiseStdDev = 1.0;
+inline constexpr int DisturbMinSamplingSplinePoints = 1;
+inline constexpr int DisturbMaxSamplingSplinePoints = 36;
+inline constexpr double DisturbMinNoiseStdDev = 0.0;
+inline constexpr double DisturbMaxNoiseStdDev = 1.0;
 
-class SamplingPlanner : public RankedPlanner {
+class SamplingDisturbPlanner : public RankedPlanner {
  public:
   // constructor
-  SamplingPlanner() = default;
+  SamplingDisturbPlanner() = default;
+
+  SamplingDisturbPlanner(const std::shared_ptr<NominalControlTrajectory>nominal_control_traj)
+  {
+    this->nominal_control_traj = nominal_control_traj;
+    this->policy.SetNominalControlTrajectory(nominal_control_traj);
+  }
 
   // destructor
-  ~SamplingPlanner() override = default;
+  ~SamplingDisturbPlanner() override = default;
 
   // ----- methods ----- //
 
@@ -56,6 +62,9 @@ class SamplingPlanner : public RankedPlanner {
 
   // set state
   void SetState(const State& state) override;
+
+  // set data for disturbance policy
+  void SetPolicyNominalControlTrajectory(const std::shared_ptr<NominalControlTrajectory> nominal_control_traj);
 
   // optimize nominal policy using random sampling
   void OptimizePolicy(int horizon, ThreadPool& pool) override;
@@ -119,9 +128,9 @@ class SamplingPlanner : public RankedPlanner {
   std::vector<double> userdata;
 
   // policy
-  SamplingPolicy policy;  // (Guarded by mtx_)
-  SamplingPolicy candidate_policy[kMaxTrajectory];
-  SamplingPolicy previous_policy;
+  SamplingDisturbPolicy policy;  // (Guarded by mtx_)
+  SamplingDisturbPolicy candidate_policy[kMaxTrajectory];
+  SamplingDisturbPolicy previous_policy;
 
   // scratch
   std::vector<double> parameters_scratch;
@@ -154,8 +163,12 @@ class SamplingPlanner : public RankedPlanner {
 
   int num_trajectory_;
   mutable std::shared_mutex mtx_;
+
+  // disturbance
+  std::shared_ptr<NominalControlTrajectory> nominal_control_traj = nullptr;
+  double disturbance_sampling_scale = 0.02;
 };
 
 }  // namespace mjpc
 
-#endif  // MJPC_PLANNERS_SAMPLING_PLANNER_H_
+// #endif  // MJPC_PLANNERS_SAMPLING_PLANNER_H_

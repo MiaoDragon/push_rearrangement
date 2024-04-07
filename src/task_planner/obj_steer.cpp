@@ -1,4 +1,5 @@
 #include "obj_steer.h"
+#include "mujoco/mjmodel.h"
 #include "mujoco/mujoco.h"
 #include <eiquadprog/eiquadprog-fast.hpp>
 #include <memory>
@@ -8,7 +9,7 @@ bool single_obj_steer_ee_position(const mjModel* m, mjData* d,  // d is updated 
                                   const int& obj_body_id,
                                   const Matrix4d& start_T, const Matrix4d& goal_T, 
                                   const Vector3d& ee_contact_in_obj,
-                                  Vector3d& robot_ee_v, Vector6d& obj_twist,
+                                  Vector6d& obj_twist,
                                   std::shared_ptr<PositionTrajectory>& robot_ee_traj,
                                   std::shared_ptr<PoseTrajectory>& obj_pose_traj)
 {
@@ -24,7 +25,16 @@ bool single_obj_steer_ee_position(const mjModel* m, mjData* d,  // d is updated 
     d->qpos[qadr1] = robot_pos[0];
     d->qpos[qadr2] = robot_pos[1];
     d->qpos[qadr3] = robot_pos[2];
+
+    std::cout << "qadr from body_jntadr: " << qadr1 << " " << qadr2 << " " << qadr3 << std::endl;
+    std::cout << "qadr from name: " << m->jnt_qposadr[mj_name2id(m, mjOBJ_JOINT, "ee_position_x")];
+    std::cout << " " << m->jnt_qposadr[mj_name2id(m, mjOBJ_JOINT, "ee_position_y")];
+    std::cout << " " << m->jnt_qposadr[mj_name2id(m, mjOBJ_JOINT, "ee_position_z")] << std::endl;
+
+    // print out robot position
+    std::cout << "robot_pos: " << robot_pos.transpose() << std::endl;
     mj_forward(m, d);
+    std::cout << "after mj_forward, qpos: " << d->qpos[qadr1] << " " << d->qpos[qadr2] << " " << d->qpos[qadr3] << std::endl;
 
     /* obtain contacts */
     FocusedContacts contacts(m, d, {obj_body_id}, 2);
@@ -99,20 +109,25 @@ bool single_obj_steer_ee_position(const mjModel* m, mjData* d,  // d is updated 
     if (status != eiquadprog::solvers::EIQUADPROG_FAST_OPTIMAL)
     {
         // problem is not solved.
-        robot_ee_v.setZero();
         obj_twist = VectorXd::Zero(6);
         robot_ee_traj = nullptr; // nothing here
         obj_pose_traj = nullptr;
         return false; // unsolved
     }
-    robot_ee_v = x.head(3);
     obj_twist = x.segment(3,6);
 
     // since we assume that the velocity is so that when t=1 goal is achieved, it is just the delta to goal
-    robot_ee_traj = std::make_unique<PositionTrajectory>(robot_pos, robot_pos + robot_ee_v);
+    /**
+     * @brief
+     * UPDATE: April 6, changed from LinearPosition and LinearPose to ScrewPosition and ScrewPose
+     * this is more general, since after we solve the velocity, it basically means the position should undergo the same
+     * screw motion as the object. Hence we need to use screw motion rather than linear motion.
+     * 
+     */
+    robot_ee_traj = std::make_unique<ScrewPositionTrajectory>(robot_pos, obj_twist);
     Vector6d obj_twist_unit;
     double obj_theta;
     twist_to_unit_twist(obj_twist, obj_twist_unit, obj_theta);
-    obj_pose_traj = std::make_unique<PoseTrajectory>(start_T, obj_twist_unit, obj_theta);
+    obj_pose_traj = std::make_unique<ScrewPoseTrajectory>(start_T, obj_twist_unit, obj_theta);
     return true;
 }

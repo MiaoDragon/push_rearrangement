@@ -91,6 +91,10 @@ add_library(
   planners/robust/robust_planner.h
   planners/sample_gradient/planner.cc
   planners/sample_gradient/planner.h
+  planners/sampling/disturb_planner.cc
+  planners/sampling/disturb_planner.h
+  planners/sampling/disturb_policy.cc
+  planners/sampling/disturb_policy.h
   planners/sampling/planner.cc
   planners/sampling/planner.h
   planners/sampling/policy.cc

@@ -32,10 +32,17 @@
 #include <mjpc/interface.h>
 #include <mjpc/task.h>
 #include <mjpc/planners/sampling/planner.h>
+#include <mjpc/planners/cross_entropy/planner.h>
+#include <mjpc/planners/gradient/planner.h>
+#include <mjpc/planners/robust/robust_planner.h>
+#include <mjpc/planners/ilqg/planner.h>
+#include <mjpc/planners/sample_gradient/planner.h>
+#include <mjpc/planners/sampling/disturb_policy.h>
+#include <mjpc/planners/sampling/disturb_planner.h>
+
 #include <mjpc/states/state.h>
 #include <mjpc/threadpool.h>
 #include <mjpc/norm.h>
-
 
 #include "../control/pusher_mpc_task.h"
 #include "../task_planner/obj_steer.h"
@@ -143,7 +150,6 @@ int main(void)
     {
         mju_error("Could not init glfw");
     }
-
     // init GLFW, create window, make OpenGL context current, request v-sync
     GLFWwindow* window = glfwCreateWindow(1200, 900, "Demo", NULL, NULL);
     glfwMakeContextCurrent(window);
@@ -167,9 +173,11 @@ int main(void)
     glfwSetScrollCallback(window, scroll);
 
 
+    d->qpos[m->jnt_qposadr[mj_name2id(m, mjOBJ_JOINT, "ee_position_z")]] = 0.1; // for stable start
 
     mj_forward(m, d);
-    for (int i=0; i<10; i++) mj_step(m, d);  // try to stablize
+    for (int i=0; i<20; i++) mj_step(m, d);  // try to stablize
+    std::cout << "after step" << std::endl;
 
     int obj_bid = mj_name2id(m, mjOBJ_BODY, "object_0");
     int obj_goal_bid = mj_name2id(m, mjOBJ_BODY, "goal");
@@ -178,17 +186,16 @@ int main(void)
     mj_to_transform(m, d, obj_goal_bid, obj_goal_T);
     
     Vector3d ee_contact_in_obj;
-    ee_contact_in_obj[0] = -0.04;//obj_start_pos[0] - 0.04; //0.7000660902822591; 
+    ee_contact_in_obj[0] = -0.04-0.005/2;//obj_start_pos[0] - 0.04; //0.7000660902822591; 
     ee_contact_in_obj[1] = 0;//obj_start_pos[1];
-    ee_contact_in_obj[2] = 0;//obj_start_pos[2];
+    ee_contact_in_obj[2] = -0.02;//obj_start_pos[2];
 
-    Vector3d robot_ee_v;
     Vector6d obj_twist;
     std::shared_ptr<PositionTrajectory> robot_ee_traj = nullptr;
     std::shared_ptr<PoseTrajectory> obj_pose_traj = nullptr;
 
     bool status = single_obj_steer_ee_position(m, d, obj_bid, obj_start_T, obj_goal_T, ee_contact_in_obj, 
-                                               robot_ee_v, obj_twist, robot_ee_traj, obj_pose_traj);
+                                               obj_twist, robot_ee_traj, obj_pose_traj);
     if (status)
     {
         std::cout << "planning success!" << std::endl;
@@ -198,61 +205,155 @@ int main(void)
         std::cout << "planning failed" << std::endl;
     }
 
-
     std::vector<int> robot_qpos_ids = {};
     robot_qpos_ids.push_back(m->jnt_qposadr[mj_name2id(m, mjOBJ_JOINT, "ee_position_x")]);
     robot_qpos_ids.push_back(m->jnt_qposadr[mj_name2id(m, mjOBJ_JOINT, "ee_position_y")]);
     robot_qpos_ids.push_back(m->jnt_qposadr[mj_name2id(m, mjOBJ_JOINT, "ee_position_z")]);
+    std::vector<int> robot_qvel_ids = {};
+    robot_qvel_ids.push_back(m->jnt_dofadr[mj_name2id(m, mjOBJ_JOINT, "ee_position_x")]);
+    robot_qvel_ids.push_back(m->jnt_dofadr[mj_name2id(m, mjOBJ_JOINT, "ee_position_y")]);
+    robot_qvel_ids.push_back(m->jnt_dofadr[mj_name2id(m, mjOBJ_JOINT, "ee_position_z")]);
     std::vector<int> obj_bids = {};
     obj_bids.push_back(mj_name2id(m, mjOBJ_BODY, "object_0"));
 
     // set robot initial position
+    ////////////////////////////////
     Vector3d robot_start_position = obj_start_T.block<3,3>(0,0) * ee_contact_in_obj + obj_start_T.block<3,1>(0,3);
     d->qpos[robot_qpos_ids[0]] = robot_start_position[0];
     d->qpos[robot_qpos_ids[1]] = robot_start_position[1];
     d->qpos[robot_qpos_ids[2]] = robot_start_position[2];
     mj_forward(m, d);
 
-    double duration = 5; // seconds
+    double duration = 10; // seconds
 
     /* set up control task */
-    int num_term = 9;
-    std::vector<int> dim_norm_residual = {1, 1, 1, 1, 1, 1, 1, 1, 1};
-    std::vector<mjpc::NormType> norm = {mjpc::NormType::kQuadratic, mjpc::NormType::kQuadratic, mjpc::NormType::kQuadratic, 
-                                        mjpc::NormType::kQuadratic, mjpc::NormType::kQuadratic, mjpc::NormType::kQuadratic,
-                                        mjpc::NormType::kQuadratic, mjpc::NormType::kQuadratic, mjpc::NormType::kQuadratic};
+    // int num_term = 3+3+3+3;
+    int num_term = 12;
+    // std::vector<int> dim_norm_residual = {3, 3, 3};
+    std::vector<int> dim_norm_residual = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+
+    // std::vector<mjpc::NormType> norm = {mjpc::NormType::kQuadratic, mjpc::NormType::kQuadratic, mjpc::NormType::kQuadratic};
+
+    std::vector<mjpc::NormType> norm = {mjpc::NormType::kSmoothAbsLoss, mjpc::NormType::kSmoothAbsLoss, mjpc::NormType::kSmoothAbsLoss, 
+                                        mjpc::NormType::kSmoothAbsLoss, mjpc::NormType::kSmoothAbsLoss, mjpc::NormType::kSmoothAbsLoss,
+                                        mjpc::NormType::kSmoothAbsLoss, mjpc::NormType::kSmoothAbsLoss, mjpc::NormType::kSmoothAbsLoss,
+                                        mjpc::NormType::kSmoothAbsLoss, mjpc::NormType::kSmoothAbsLoss, mjpc::NormType::kSmoothAbsLoss,};
+    //                                     mjpc::NormType::kQuadratic, mjpc::NormType::kQuadratic};
+    // std::vector<mjpc::NormType> norm = {mjpc::NormType::kQuadratic, mjpc::NormType::kQuadratic, mjpc::NormType::kQuadratic, 
+    //                                     mjpc::NormType::kQuadratic, mjpc::NormType::kQuadratic, mjpc::NormType::kQuadratic,
+    //                                     mjpc::NormType::kQuadratic, mjpc::NormType::kQuadratic, mjpc::NormType::kQuadratic};
+
     std::vector<int> num_norm_parameter;
-    std::vector<double> norm_parameter = {};
+    std::vector<double> norm_parameter = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    // std::vector<double> norm_parameter = {};
+
     for (int i=0; i<num_term; i++)
     {
         num_norm_parameter.push_back(mjpc::NormParameterDimension(norm[i]));
     }
-    std::vector<double> weight = {1, 1, 1, 1, 1, 1, 1, 1, 1};
+    std::vector<double> weight = {0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 2, 2, 2, 5, 5, 5};
+    // std::vector<double> weight = {2, 10, 10};
+
     std::vector<double> parameters = {};
     double risk = 0.0;
 
     EEPositionPusherTask task(num_term, dim_norm_residual, norm, num_norm_parameter, norm_parameter, weight,
                               parameters, risk, obj_pose_traj, robot_ee_traj, duration, 
-                              robot_qpos_ids, obj_bids);
+                              robot_qpos_ids, robot_qvel_ids, obj_bids);
 
     /* set up controller */
     mjModel* plan_m = mj_copyModel(nullptr, m);
-    plan_m->opt.timestep = 0.01;
-    plan_m->opt.integrator = mjtIntegrator::mjINT_EULER;
-    mjpc::SamplingPlanner planner;
+    plan_m->opt.timestep = 0.02;
+    // plan_m->opt.integrator = mjtIntegrator::mjINT_EULER;
+    plan_m->opt.integrator = mjtIntegrator::mjINT_IMPLICIT;
+
+    // mjpc::SamplingPlanner planner;
+    // mjpc::CrossEntropyPlanner planner;
+    // mjpc::GradientPlanner planner;
+    // mjpc::iLQGPlanner planner;
+    // mjpc::SampleGradientPlanner planner;
+    // mjpc::RobustPlanner planner(std::make_unique<mjpc::SamplingPlanner>());
+
+    // disturb planner: 
+    mjpc::SamplingDisturbPlanner planner;
+
+    Vector3d robot_ee_start;
+    robot_ee_traj->interpolate(0, robot_ee_start);
+    Vector3d robot_ee_end;
+    robot_ee_traj->interpolate(1, robot_ee_end);
+
+    std::cout << "robot_ee_start: " << std::endl;
+    std::cout << robot_ee_start.transpose() << std::endl;
+    std::cout << "robot_ee_end: " << std::endl;
+    std::cout << robot_ee_end.transpose() << std::endl;
+
+    // generate a dense parameter categorizing the trajectory
+    // TODO: we need to actually use screw interpolation
+    int nominal_sample = 1000;
+    std::vector<double> nominal_parameters;    // t*nu
+    std::vector<double> times;
+    nominal_parameters.resize(0);
+    times.resize(0);
+    for (int i=0; i<nominal_sample; i++)
+    {
+        double t = double(i)/nominal_sample;
+        times.push_back(t*duration);
+        Vector3d robot_ee_pos, robot_ee_v;
+        robot_ee_traj->interpolate(t, robot_ee_pos);
+        robot_ee_traj->velocity(t, robot_ee_v);
+        robot_ee_v = robot_ee_v / duration;
+        nominal_parameters.push_back(robot_ee_v[0]);
+        nominal_parameters.push_back(robot_ee_v[1]);
+        nominal_parameters.push_back(robot_ee_v[2]);
+        nominal_parameters.push_back(robot_ee_pos[0]);
+        nominal_parameters.push_back(robot_ee_pos[1]);
+        nominal_parameters.push_back(robot_ee_pos[2]);
+    }
+    {
+        double t = 1.0;
+        times.push_back(t*duration);
+        Vector3d robot_ee_pos, robot_ee_v;
+        robot_ee_traj->interpolate(t, robot_ee_pos);
+        robot_ee_traj->velocity(t, robot_ee_v);
+        robot_ee_v = robot_ee_v / duration;
+        nominal_parameters.push_back(robot_ee_v[0]);
+        nominal_parameters.push_back(robot_ee_v[1]);
+        nominal_parameters.push_back(robot_ee_v[2]);
+        nominal_parameters.push_back(robot_ee_pos[0]);
+        nominal_parameters.push_back(robot_ee_pos[1]);
+        nominal_parameters.push_back(robot_ee_pos[2]);
+    }
+
+
+
+    // std::vector<double> nominal_parameters = {robot_ee_v[0],robot_ee_v[1],robot_ee_v[2],robot_ee_start[0],robot_ee_start[1],robot_ee_start[2],
+    //                                           robot_ee_v[0],robot_ee_v[1],robot_ee_v[2],robot_ee_end[0],robot_ee_end[1],robot_ee_end[2]};
+    // std::vector<double> times = {0,duration};
+    std::shared_ptr<mjpc::NominalControlTrajectory> nominal_control_traj = \
+                            std::make_shared<mjpc::NominalControlTrajectory>(m->nu, nominal_sample+1, 
+                                                                             mjpc::PolicyRepresentation::kLinearSpline,
+                                                                             nominal_parameters, times);
+    nominal_control_traj->set_start_time(d->time);
+    planner.SetPolicyNominalControlTrajectory(nominal_control_traj);
+
+    // mjpc::RobustPlanner planner(std::make_unique<mjpc::SamplingDisturbPlanner>(nominal_control_traj));
     planner.Initialize(plan_m, task);
     planner.Allocate();
     mjpc::State state;
     state.Initialize(plan_m);
     state.Allocate(plan_m);
     state.Reset();
-    mjpc::ThreadPool pool(10);
+
+    mjpc::ThreadPool pool(16);
+    ////////////////////////////////
 
 
     /* start execution */
-    int n_samples = ceil(duration / m->opt.timestep);
+    // int n_samples = ceil(duration / m->opt.timestep);
     int traj_idx = 0;
     int step_idx = 0;
+    m->opt.integrator = mjtIntegrator::mjINT_RK4;
+    // double duration = 5.0;
 
     // double render_prob = 0.2;
     // std::random_device rd;
@@ -261,6 +362,10 @@ int main(void)
     // std::chrono::time_point<std::chrono::system_clock> time_now = std::chrono::system_clock::now();
 
     task.set_start_time(d->time);
+    double start_time = d->time;
+    std::ofstream file;
+    file.open("robot_position_error.txt");
+
     /* visualize the trajectory */
     while (!glfwWindowShouldClose(window))
     {
@@ -277,19 +382,68 @@ int main(void)
 
             state.Set(plan_m, d);
             planner.SetState(state);
-
+            std::cout << "before optimizing..." << std::endl;
             for (int opt_iter=0; opt_iter<1; opt_iter++)
             {
                 planner.OptimizePolicy(100, pool);
             }
-
-            planner.ActionFromPolicy(d->ctrl, &state.state()[0], d->time);
-
-            mj_step(m, d);
-            step_idx += 1;
         }
+        std::cout << "action from policy" << std::endl;
+        planner.ActionFromPolicy(d->ctrl, &state.state()[0], d->time);
 
-        if (step_idx % 10 != 0) continue;
+        double action[m->nu];
+        nominal_control_traj->at(d->time, action);
+        std::cout << "nominal action: " << std::endl;
+        for (int ai=0; ai<m->nu; ai++)
+        {
+            std::cout << action[ai] << " ";
+        }
+        std::cout << std::endl;
+
+        // Below is for trying direct control of robot
+        // d->ctrl[0] = robot_ee_v[0]/duration;
+        // d->ctrl[1] = 0;
+        // d->ctrl[2] = 0;
+        std::cout << "actuated control: " << std::endl;
+        for (int ui=0; ui<m->nu; ui++)
+        {
+            std::cout << d->ctrl[ui] << " ";
+        }
+        std::cout << std::endl;
+
+
+        Vector3d interp_pos, interp_v;
+        double interp_t = std::min(1.0,(d->time-start_time)/duration);
+        robot_ee_traj->interpolate(interp_t, interp_pos);
+        robot_ee_traj->velocity(interp_t, interp_v);
+
+        // d->ctrl[3] = interp_pos[0];
+        // d->ctrl[4] = interp_pos[1];
+        // d->ctrl[5] = interp_pos[2];
+
+        // check the current pose difference
+        std::cout << "tracking... " << std::endl;
+        std::cout << "qpos: " << d->qpos[0] << " " << d->qpos[1] << " " << d->qpos[2] << std::endl;
+        std::cout << "interpolated position: " << interp_pos[0] << " " << interp_pos[1] << " " << interp_pos[2] << std::endl;
+        std::cout << "vel to track: " << interp_v.transpose()/duration  << std::endl;
+
+        file << d->qpos[0]-interp_pos[0] << " " << d->qpos[1]-interp_pos[1] << " " <<d->qpos[2]-interp_pos[2] << std::endl;
+
+        mj_step(m, d);
+        // std::cout << "inside loop, qpos: " << d->qpos[0] << " " << d->qpos[1] << " " << d->qpos[2] << std::endl;
+        // int ee_bid = mj_name2id(m, mjOBJ_BODY, "ee_position");
+        // std::cout << "xpos of endeffector: " << d->xpos[3*ee_bid] << " " << d->xpos[3*ee_bid+1] << " " << d->xpos[3*ee_bid+2] << std::endl;
+        // std::cout << "nq: " << m->nq << std::endl;
+        // for (int j=0; j<m->nq; j++)
+        // {
+        //     std::cout << d->qpos[j] << " ";
+        // }
+        // std::cout << std::endl;
+
+        std::cout << "step_idx: " << step_idx << std::endl;
+        step_idx += 1;
+
+        if (step_idx % 20 != 0) continue;
 
         // get framebuffer viewport
         mjrRect viewport = {0,0,0,0};
@@ -304,6 +458,8 @@ int main(void)
 
         glfwPollEvents();
     }
+    file.close();
+
     // free vis storage
     mjv_freeScene(&scn);
     mjr_freeContext(&con);

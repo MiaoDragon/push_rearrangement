@@ -268,9 +268,9 @@ void vel_to_contact_modes(const Contacts& contacts,
         std::vector<int> ss_mode;
         vel_to_contact_mode(contacts.contacts[i], twist1, twist2, 2, cs_mode, ss_mode);
 
-        std::cout << "cs_mode: " << cs_mode << std::endl;
-        std::cout << "ss_mode: " << std::endl;
-        for (int j=0; j<ss_mode.size(); j++)  std::cout << ss_mode[j] << ", " << std::endl;
+        // std::cout << "cs_mode: " << cs_mode << std::endl;
+        // std::cout << "ss_mode: " << std::endl;
+        // for (int j=0; j<ss_mode.size(); j++)  std::cout << ss_mode[j] << ", " << std::endl;
 
         cs_modes.push_back(cs_mode);
         ss_modes.push_back(ss_mode);

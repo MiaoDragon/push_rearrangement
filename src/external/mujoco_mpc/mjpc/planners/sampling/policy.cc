@@ -47,6 +47,7 @@ void SamplingPolicy::Allocate(const mjModel* model, const Task& task,
   // representation
   representation = GetNumberOrDefault(PolicyRepresentation::kCubicSpline, model,
                                       "sampling_representation");
+
 }
 
 // reset memory to zeros
@@ -72,16 +73,40 @@ void SamplingPolicy::Action(double* action, const double* state,
   int bounds[2];
   FindInterval(bounds, times, time, num_spline_points);
 
+//   std::cout << "finding interval..." << std::endl;
+//   std::cout << "times: " << std::endl;
+//   for (int i=0; i<num_spline_points; i++)
+//   {
+//     std::cout << times[i] << " ";
+//   }
+//   std::cout << std::endl;
+
+//   std::cout << "time: " << time << std::endl;
+
   // ----- get action ----- //
+
+//   std::cout << "policy parameters: " << std::endl;
+//   for (int i=0; i<num_parameters; i++)
+//   {
+//     std::cout << parameters[i] << " ";
+//   }
+//   std::cout << std::endl;
+
+//   std::cout << "bounds[0]: " << bounds[0] << std::endl;
+//   std::cout << "bounds[1]: " << bounds[1] << std::endl;
+//   std::cout << "representation: " << representation << std::endl;
 
   if (bounds[0] == bounds[1] ||
       representation == PolicyRepresentation::kZeroSpline) {
+    // std::cout << "zero" << std::endl;
     ZeroInterpolation(action, time, times, parameters.data(), model->nu,
                       num_spline_points);
   } else if (representation == PolicyRepresentation::kLinearSpline) {
+    // std::cout << "linear" << std::endl;
     LinearInterpolation(action, time, times, parameters.data(), model->nu,
                         num_spline_points);
   } else if (representation == PolicyRepresentation::kCubicSpline) {
+    // std::cout << "cubic" << std::endl;
     CubicInterpolation(action, time, times, parameters.data(), model->nu,
                        num_spline_points);
   }

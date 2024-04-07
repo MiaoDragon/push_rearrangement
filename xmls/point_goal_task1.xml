@@ -1,0 +1,102 @@
+
+<?xml version="1.0" encoding="utf-8"?>
+<mujoco model="scene1">
+  <compiler angle="radian" balanceinertia="true" inertiafromgeom="true" 
+    meshdir="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/"
+    texturedir="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/"
+    autolimits="true"/>
+
+  <asset>
+    <texture builtin="checker" height="512" name="grid" rgb1="0.1 0.2 0.3" rgb2="0.2 0.3 0.4" type="2d" width="512"/>
+    <material name="grid" emission="1" reflectance="0" shininess="0" specular="0" texrepeat="0.5 0.5" texture="grid" texuniform="true"/>
+  </asset>
+  <worldbody>
+    <geom condim="3" material="grid" name="floor" size="2 2 0.05" type="plane"/>
+    <geom conaffinity="0" contype="0" group="1" material="grid" name="floor_vis" size="2 2 0.05" type="plane"/>
+    <light castshadow="false" diffuse="1 1 1" dir="0 0 -1" directional="true" pos="-0.5 0.5 3"/>
+    <!-- <site name="world"/> -->
+    <!-- <body name="workspace" pos="0.4 0 0" quat="1 0 0 0">   -->
+
+    <!-- <body name="pointmass" pos="0.22 0 0.1" gravcomp="1"> -->
+    <!-- <body name="pointmass" pos="0.7000660902822591 -0.05971188968363312 1.035" gravcomp="1"> -->
+    <body name="ee_position" pos="0 0 0.1" gravcomp="1">
+      <camera name="cam0" pos="0 -0.3 0.3" xyaxes="1 0 0 0 0.7 0.7"/>
+      <joint name="ee_position_x" type="slide"  pos="0 0 0" axis="1 0 0" ref="0" />
+      <joint name="ee_position_y" type="slide"  pos="0 0 0" axis="0 1 0" ref="0" />
+      <joint name="ee_position_z" type="slide"  pos="0 0 0" axis="0 0 1" ref="0.1" />
+      <geom name="ee_position" type="sphere" size=".005" mass="0.05"/>
+      <site name="tip" pos="0 0 0" size="0.001"/>
+    </body>
+
+    <body name="ee_position_goal" pos="0.2 0 0.1" gravcomp="1">
+      <geom name="ee_position_goal" type="sphere" size=".005" mass="10" contype="0" conaffinity="0" rgba="1 0 0 .5"/>
+    </body>
+
+
+  </worldbody>
+
+  <actuator>
+    <!-- <intvelocity name="ee_position_x_vel" site="tip" kp="10000" kv="1000" actrange="-2 2" ctrllimited="true" ctrlrange="-0.1 0.1" gear="1 0 0 0 0 0"/>
+    <intvelocity name="ee_position_y_vel" site="tip" kp="10000" kv="1000" actrange="-2 2" ctrllimited="true" ctrlrange="-0.1 0.1" gear="0 1 0 0 0 0"/>
+    <intvelocity name="ee_position_z_vel" site="tip" kp="10000" kv="1000" actrange="0 2" ctrllimited="true" ctrlrange="-0.1 0.1" gear="0 0 1 0 0 0"/> -->
+
+    <!-- <intvelocity name="ee_position_x_vel" joint="ee_position_x" kp="10000" kv="1000" actrange="-2 2" ctrllimited="true" ctrlrange="-1 1"/>
+    <intvelocity name="ee_position_y_vel" joint="ee_position_y" kp="10000" kv="1000" actrange="-2 2" ctrllimited="true" ctrlrange="-1 1"/>
+    <intvelocity name="ee_position_z_vel" joint="ee_position_z" kp="10000" kv="1000" actrange="0 2" ctrllimited="true" ctrlrange="-1 1"/> -->
+
+    <!-- <motor name="ee_position_x_vel" joint="ee_position_x" gear="1" ctrllimited="true" ctrlrange="-1 1"/>
+    <motor name="ee_position_y_vel" joint="ee_position_y" gear="1" ctrllimited="true" ctrlrange="-1 1"/>
+    <motor name="ee_position_z_vel" joint="ee_position_z" gear="1" ctrllimited="true" ctrlrange="-1 1"/> -->
+
+
+    <velocity name="ee_position_x_vel" joint="ee_position_x" kv="10" ctrllimited="true" ctrlrange="-0.3 0.3"/>
+    <velocity name="ee_position_y_vel" joint="ee_position_y" kv="10" ctrllimited="true" ctrlrange="-0.3 0.3"/>
+    <velocity name="ee_position_z_vel" joint="ee_position_z" kv="10" ctrllimited="true" ctrlrange="-0.3 0.3"/>
+
+    <!-- <position name="ee_position_x_pos" joint="ee_position_x" kp="10000" ctrllimited="false"/>
+    <position name="ee_position_y_pos" joint="ee_position_y" kp="10000" ctrllimited="false"/>
+    <position name="ee_position_z_pos" joint="ee_position_z" kp="10000" ctrllimited="false"/> -->
+
+    <!-- <velocity name="x_vel" joint="root_x" kv="10" ctrllimited="true" ctrlrange="-0.05 0.05"/>
+    <velocity name="y_vel" joint="root_y" kv="10" ctrllimited="true" ctrlrange="-0.05 0.05"/>
+    <velocity name="z_vel" joint="root_z" kv="10" ctrllimited="true" ctrlrange="-0.05 0.05"/> -->
+    <!-- <motor name="x_vel" joint="root_x" gear="1" ctrllimited="true" ctrlrange="-1 1"/>
+    <motor name="y_vel" joint="root_y" gear="1" ctrllimited="true" ctrlrange="-1 1"/>
+    <motor name="z_vel" joint="root_z" gear="1" ctrllimited="true" ctrlrange="-1 1"/> -->
+
+  </actuator>
+
+
+  <custom>
+    <!-- agent -->
+    <numeric name="agent_planner" data="2" />
+    <numeric name="agent_horizon" data="10" />
+    <numeric name="agent_timestep" data="0.002" />
+    <numeric name="agent_integrator" data="2" />
+    <numeric name="agent_policy_width" data="0.0015" />
+    <numeric name="sampling_spline_points" data="15" />
+    <numeric name="sampling_exploration" data="0.03" />
+    <numeric name="sampling_trajectories" data="30" />
+    <numeric name="gradient_spline_points" data="15" />
+
+    <!-- estimator -->
+    <numeric name="estimator" data="0" />
+    <numeric name="estimator_sensor_start" data="2" />
+    <numeric name="estimator_number_sensor" data="8" />
+    <numeric name="estimator_timestep" data="0.0075" />
+    <numeric name="batch_configuration_length" data="3" />
+    <numeric name="batch_scale_prior" data="1.0e-3" />
+  </custom>
+
+  <statistic extent="1.5" center="0.1 0.2 0.3"/>
+
+
+  <sensor>
+    <!-- Residual 0-2: distance from robot hand to the object -->
+
+    <!-- <user name="Control torso" dim="1" user="0 0.1 0 5"/> -->
+    <user name="error robot position" dim="3"/>
+
+  </sensor>
+
+</mujoco>

@@ -28,10 +28,11 @@ struct Contact
 {
     Contact(int body_id1_, int body_id2_, int body_idx1_, int body_idx2_,
             BodyType body_type1_, BodyType body_type2_,
-            const double* pos_, const double* frame_)
+            const double* pos_, const double* frame_, const double mu_=1.0)
             : body_id1(body_id1_), body_id2(body_id2_),
               body_idx1(body_idx1_), body_idx2(body_idx2_),
-              body_type1(body_type1_), body_type2(body_type2_)
+              body_type1(body_type1_), body_type2(body_type2_),
+              mu(mu_)
     {
         /**
          * NOTE: 
@@ -71,6 +72,9 @@ struct Contact
     double mu = 1.0;  // friction coeff
 };
 
+
+double EE_FRICTION = 0.75;
+
 struct Contacts
 {
     Contacts(){contacts.resize(0);}
@@ -85,6 +89,7 @@ struct Contacts
             int root_body2 = m->body_rootid[body2];
             BodyType body_type1, body_type2;
             int body_idx1, body_idx2;
+            double friction = 1.0;
             const char* root_name1 = mj_id2name(m, mjOBJ_BODY, root_body1);
             if (strstr(root_name1, "object") != NULL)  // object name: object_[idx]
             {
@@ -102,7 +107,7 @@ struct Contacts
             }
             else
             {
-                body_type1 = ROBOT; body_idx1 = -2;
+                body_type1 = ROBOT; body_idx1 = -2; friction = EE_FRICTION;
             }
             const char* root_name2 = mj_id2name(m, mjOBJ_BODY, root_body2);
             if (strstr(root_name2, "object") != NULL)
@@ -122,7 +127,7 @@ struct Contacts
             }
             else
             {
-                body_type2 = ROBOT; body_idx2 = -2;
+                body_type2 = ROBOT; body_idx2 = -2; friction = EE_FRICTION;
             }
             /**
              * NOTE:
@@ -131,7 +136,8 @@ struct Contacts
              */
             Contact* contact = new Contact(body1, body2, body_idx1, body_idx2,
                                           body_type1, body_type2,
-                                          d->contact[i].pos, d->contact[i].frame);
+                                          d->contact[i].pos, d->contact[i].frame,
+                                          friction);
             contacts.push_back(contact);
         }
     }
@@ -156,6 +162,7 @@ struct Contacts
  * Robot link ee_position refers to when using end-effector position.
  * 
  */
+
 struct FocusedContacts : public Contacts
 {
   public:
@@ -176,6 +183,7 @@ struct FocusedContacts : public Contacts
             int root_body2 = m->body_rootid[body2];
             BodyType body_type1=ENV, body_type2=ENV;
             int body_idx1=-1, body_idx2=-1;
+            double friction = 1.0;
             const char* root_name1 = mj_id2name(m, mjOBJ_BODY, root_body1);
             if (strstr(root_name1, "object") != NULL)  // object name: object_[idx]
             {
@@ -207,7 +215,7 @@ struct FocusedContacts : public Contacts
                     continue;
                 }
                 // consider this as robot
-                body_type1 = EE_POSE; body_idx1 = -3;
+                body_type1 = EE_POSE; body_idx1 = -3; friction = EE_FRICTION;
             }
             else if (strcmp("ee_position", root_name1) == 0)
             {
@@ -215,7 +223,7 @@ struct FocusedContacts : public Contacts
                 {
                     continue;
                 }
-                body_type1 = EE_POSITION; body_idx1 = -4;
+                body_type1 = EE_POSITION; body_idx1 = -4; friction = EE_FRICTION;
             }
             else // robot
             {
@@ -223,7 +231,7 @@ struct FocusedContacts : public Contacts
                 {
                     continue;
                 }
-                body_type1 = ROBOT; body_idx1 = -2;
+                body_type1 = ROBOT; body_idx1 = -2; friction = EE_FRICTION;
             }
             const char* root_name2 = mj_id2name(m, mjOBJ_BODY, root_body2);
             if (strstr(root_name2, "object") != NULL)
@@ -256,7 +264,7 @@ struct FocusedContacts : public Contacts
                     continue;
                 }
                 // consider this as robot
-                body_type2 = EE_POSE; body_idx2 = -3;
+                body_type2 = EE_POSE; body_idx2 = -3; friction = EE_FRICTION;
             }
             else if (strcmp("ee_position", root_name2) == 0)
             {
@@ -264,7 +272,7 @@ struct FocusedContacts : public Contacts
                 {
                     continue;
                 }
-                body_type2 = EE_POSITION; body_idx2 = -4;
+                body_type2 = EE_POSITION; body_idx2 = -4; friction = EE_FRICTION;
             }
             else // robot
             {
@@ -272,7 +280,7 @@ struct FocusedContacts : public Contacts
                 {
                     continue;
                 }
-                body_type2 = ROBOT; body_idx2 = -2;
+                body_type2 = ROBOT; body_idx2 = -2; friction = EE_FRICTION;
             }
 
             /**
@@ -282,7 +290,8 @@ struct FocusedContacts : public Contacts
              */
             Contact* contact = new Contact(body1, body2, body_idx1, body_idx2,
                                           body_type1, body_type2,
-                                          d->contact[i].pos, d->contact[i].frame);
+                                          d->contact[i].pos, d->contact[i].frame, 
+                                          friction);
             contacts.push_back(contact);
         }
     }
