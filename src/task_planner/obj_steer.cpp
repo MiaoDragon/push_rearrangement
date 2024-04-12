@@ -38,6 +38,8 @@ bool single_obj_steer_ee_position(const mjModel* m, mjData* d,  // d is updated 
 
     /* obtain contacts */
     FocusedContacts contacts(m, d, {obj_body_id}, 2);
+    // std::cout << "after contact" << std::endl;
+
 
     /* obtain modes given target twist */
     std::unordered_map<int, Vector6d> twists;

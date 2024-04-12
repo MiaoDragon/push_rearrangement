@@ -73,7 +73,8 @@ struct Contact
 };
 
 
-double EE_FRICTION = 0.75;
+double EE_FRICTION = .1;
+double TABLE_FRICTION = 1;
 
 struct Contacts
 {
@@ -99,7 +100,7 @@ struct Contacts
             }
             else if (strcmp("workspace", root_name1) == 0)
             {
-                body_type1 = ENV; body_idx1 = -1;
+                body_type1 = ENV; body_idx1 = -1; friction = TABLE_FRICTION;
             }
             else if (strcmp("world", root_name1) == 0)
             {
@@ -119,7 +120,7 @@ struct Contacts
             }
             else if (strcmp("workspace", root_name2) == 0)
             {
-                body_type2 = ENV; body_idx2 = -1;
+                body_type2 = ENV; body_idx2 = -1; friction = TABLE_FRICTION;
             }
             else if (strcmp("world", root_name2) == 0)
             {
@@ -202,7 +203,7 @@ struct FocusedContacts : public Contacts
             }
             else if (strcmp("workspace", root_name1) == 0)
             {
-                body_type1 = ENV; body_idx1 = -1;
+                body_type1 = ENV; body_idx1 = -1; friction = TABLE_FRICTION;
             }
             else if (strcmp("world", root_name1) == 0)
             {
@@ -251,7 +252,7 @@ struct FocusedContacts : public Contacts
             }
             else if (strcmp("workspace", root_name2) == 0)
             {
-                body_type2 = ENV; body_idx2 = -1;
+                body_type2 = ENV; body_idx2 = -1; friction = TABLE_FRICTION;
             }
             else if (strcmp("world", root_name2) == 0)
             {

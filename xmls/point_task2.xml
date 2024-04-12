@@ -1,0 +1,58 @@
+<mujoco model="RobotPush1">
+<!-- Pushing one object from start to goal -->
+  <!-- <compiler angle="radian" balanceinertia="true" inertiafromgeom="true" 
+    meshdir="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/"
+    texturedir="/home/yinglong/Documents/research/task_motion_planning/infrastructure/motoman_ws/src/pracsys_vbnpm/"
+    autolimits="true"/> -->
+  <include file="point_push.xml"/>
+  <include file="obj_setup2.xml"/>
+
+  <!-- <size memory="1M"/> -->
+
+  <custom>
+    <!-- agent -->
+    <numeric name="agent_planner" data="2" />
+    <numeric name="agent_horizon" data="10" />
+    <numeric name="agent_timestep" data="0.002" />
+    <numeric name="agent_integrator" data="2" />
+    <numeric name="agent_policy_width" data="0.0015" />
+    <numeric name="sampling_spline_points" data="15" />
+    <numeric name="sampling_exploration" data="0.01" />
+    <numeric name="sampling_trajectories" data="10" />
+    <numeric name="gradient_spline_points" data="15" />
+    <numeric name="disturbance_sampling_scale" data="0.02" />
+
+    <!-- estimator -->
+    <numeric name="estimator" data="0" />
+    <numeric name="estimator_sensor_start" data="2" />
+    <numeric name="estimator_number_sensor" data="8" />
+    <numeric name="estimator_timestep" data="0.0075" />
+    <numeric name="batch_configuration_length" data="3" />
+    <numeric name="batch_scale_prior" data="1.0e-3" />
+  </custom>
+
+  <statistic extent="1.5" center="0.1 0.2 0.3"/>
+
+<!-- 
+  <default>
+    <geom solref=".001 1"/>
+  </default> -->
+
+
+  <!-- <contact>
+    <exclude body1="world" body2="left_finger"/>
+    <exclude body1="world" body2="right_finger"/>
+    <exclude body1="left_finger" body2="right_finger"/>
+  </contact> -->
+
+  <sensor>
+    <!-- Residual 0-2: distance from robot hand to the object -->
+
+    <!-- <user name="Control torso" dim="1" user="0 0.1 0 5"/> -->
+    <user name="error robot position" dim="3"/>
+    <user name="error object0 position" dim="3"/>
+    <user name="error object0 orientation" dim="3"/>
+
+  </sensor>
+
+</mujoco>

@@ -90,9 +90,9 @@
     <general name="ee_position_z_pos" joint="ee_position_z" gainprm="1000" ctrllimited="true" ctrlrange="-0.01 0.01"/> -->
 
 
-    <position name="ee_position_x_pos" joint="ee_position_x" kp="1000" ctrllimited="true" ctrlrange="0 1"/>
-    <position name="ee_position_y_pos" joint="ee_position_y" kp="1000" ctrllimited="true" ctrlrange="-1 1"/>
-    <position name="ee_position_z_pos" joint="ee_position_z" kp="1000" ctrllimited="true" ctrlrange="-0.1 2"/>
+    <!-- <position name="ee_position_x_pos" joint="ee_position_x" kp="10000" ctrllimited="true" ctrlrange="0 1"/>
+    <position name="ee_position_y_pos" joint="ee_position_y" kp="10000" ctrllimited="true" ctrlrange="-1 1"/>
+    <position name="ee_position_z_pos" joint="ee_position_z" kp="10000" ctrllimited="true" ctrlrange="-0.1 2"/> -->
 
     <!-- <velocity name="x_vel" joint="root_x" kv="10" ctrllimited="true" ctrlrange="-0.05 0.05"/>
     <velocity name="y_vel" joint="root_y" kv="10" ctrllimited="true" ctrlrange="-0.05 0.05"/>

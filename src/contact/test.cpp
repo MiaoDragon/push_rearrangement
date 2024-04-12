@@ -119,23 +119,23 @@ void test_contact()
     // compare the values
     for (int i=0; i<contacts.contacts.size(); i++)
     {
-        // std::cout << "contact " << i << std::endl;
-        // std::cout << "body_id1: " << contacts.contacts[i]->body_id1 << std::endl;
-        // std::cout << "body_id2: " << contacts.contacts[i]->body_id2 << std::endl;
-        // std::cout << "body_type1: " << contacts.contacts[i]->body_type1 << std::endl;
-        // std::cout << "body_type2: " << contacts.contacts[i]->body_type2 << std::endl;
-        // std::cout << "pos: " << contacts.contacts[i]->pos[0] << "," <<
-        //                         contacts.contacts[i]->pos[1] << "," <<
-        //                         contacts.contacts[i]->pos[2] << std::endl;
-        // std::cout << "frame: " << contacts.contacts[i]->frame[0] << "," <<
-        //                           contacts.contacts[i]->frame[1] << "," <<
-        //                           contacts.contacts[i]->frame[2] << "," <<
-        //                           contacts.contacts[i]->frame[3] << "," <<
-        //                           contacts.contacts[i]->frame[4] << "," <<
-        //                           contacts.contacts[i]->frame[5] << "," <<
-        //                           contacts.contacts[i]->frame[6] << "," <<
-        //                           contacts.contacts[i]->frame[7] << "," <<
-        //                           contacts.contacts[i]->frame[8] << std::endl;
+        std::cout << "contact " << i << std::endl;
+        std::cout << "body_id1: " << contacts.contacts[i]->body_id1 << std::endl;
+        std::cout << "body_id2: " << contacts.contacts[i]->body_id2 << std::endl;
+        std::cout << "body_type1: " << contacts.contacts[i]->body_type1 << std::endl;
+        std::cout << "body_type2: " << contacts.contacts[i]->body_type2 << std::endl;
+        std::cout << "pos: " << contacts.contacts[i]->pos[0] << "," <<
+                                contacts.contacts[i]->pos[1] << "," <<
+                                contacts.contacts[i]->pos[2] << std::endl;
+        std::cout << "frame: " << contacts.contacts[i]->frame[0] << "," <<
+                                  contacts.contacts[i]->frame[1] << "," <<
+                                  contacts.contacts[i]->frame[2] << "," <<
+                                  contacts.contacts[i]->frame[3] << "," <<
+                                  contacts.contacts[i]->frame[4] << "," <<
+                                  contacts.contacts[i]->frame[5] << "," <<
+                                  contacts.contacts[i]->frame[6] << "," <<
+                                  contacts.contacts[i]->frame[7] << "," <<
+                                  contacts.contacts[i]->frame[8] << std::endl;
 
         std::cout << "Mujoco contact: " << std::endl;
         std::cout << "body_id1: " << m->geom_bodyid[d->contact[i].geom1] << std::endl;
@@ -456,7 +456,7 @@ int main(void)
 {
 
     // read mujoco scene
-    std::string filename = "/home/yinglong/Documents/research/task_motion_planning/non-prehensile-manipulation/project/push_rearrangement/xmls/point_task1.xml";
+    std::string filename = "/home/yinglong/Documents/research/task_motion_planning/non-prehensile-manipulation/project/push_rearrangement/xmls/point_task2.xml";
     const char* c = filename.c_str();
     char loadError[1024] = "";
 
@@ -524,7 +524,7 @@ int main(void)
 
 
     mjtNum total_simstart = d->time;
-
+    for (int i=0; i<100; i++) mj_step(m, d);
     mj_forward(m, d);
 
     int obj_target_id = mj_name2id(m, mjOBJ_BODY, "object_0");

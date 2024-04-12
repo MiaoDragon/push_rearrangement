@@ -188,7 +188,7 @@ int main(void)
     Vector3d ee_contact_in_obj;
     ee_contact_in_obj[0] = -0.04-0.005/2;//obj_start_pos[0] - 0.04; //0.7000660902822591; 
     ee_contact_in_obj[1] = 0;//obj_start_pos[1];
-    ee_contact_in_obj[2] = -0.02;//obj_start_pos[2];
+    ee_contact_in_obj[2] = -0.07;//obj_start_pos[2];
 
     Vector6d obj_twist;
     std::shared_ptr<PositionTrajectory> robot_ee_traj = nullptr;
@@ -305,9 +305,9 @@ int main(void)
         nominal_parameters.push_back(robot_ee_v[0]);
         nominal_parameters.push_back(robot_ee_v[1]);
         nominal_parameters.push_back(robot_ee_v[2]);
-        nominal_parameters.push_back(robot_ee_pos[0]);
-        nominal_parameters.push_back(robot_ee_pos[1]);
-        nominal_parameters.push_back(robot_ee_pos[2]);
+        // nominal_parameters.push_back(robot_ee_pos[0]);
+        // nominal_parameters.push_back(robot_ee_pos[1]);
+        // nominal_parameters.push_back(robot_ee_pos[2]);
     }
     {
         double t = 1.0;
@@ -316,12 +316,13 @@ int main(void)
         robot_ee_traj->interpolate(t, robot_ee_pos);
         robot_ee_traj->velocity(t, robot_ee_v);
         robot_ee_v = robot_ee_v / duration;
-        nominal_parameters.push_back(robot_ee_v[0]);
-        nominal_parameters.push_back(robot_ee_v[1]);
-        nominal_parameters.push_back(robot_ee_v[2]);
-        nominal_parameters.push_back(robot_ee_pos[0]);
-        nominal_parameters.push_back(robot_ee_pos[1]);
-        nominal_parameters.push_back(robot_ee_pos[2]);
+        /* NOTE: last point has zero velocity */
+        nominal_parameters.push_back(0);
+        nominal_parameters.push_back(0);
+        nominal_parameters.push_back(0);
+        // nominal_parameters.push_back(robot_ee_pos[0]);
+        // nominal_parameters.push_back(robot_ee_pos[1]);
+        // nominal_parameters.push_back(robot_ee_pos[2]);
     }
 
 
