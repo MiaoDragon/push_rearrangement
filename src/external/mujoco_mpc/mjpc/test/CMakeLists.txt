@@ -64,9 +64,9 @@ target_include_directories(simulation PRIVATE ${mujoco_SOURCE_DIR}/include gmock
 
 enable_testing()
 
-add_subdirectory(agent)
+# add_subdirectory(agent)
 add_subdirectory(direct)
-add_subdirectory(estimator)
+# add_subdirectory(estimator)
 add_subdirectory(gradient_planner)
 add_subdirectory(ilqg_planner)
 add_subdirectory(planners/robust)

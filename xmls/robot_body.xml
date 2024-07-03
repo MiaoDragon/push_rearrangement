@@ -42,10 +42,10 @@
                       <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0 0 1 1" mesh="motoman_axis_t_v" />
                       <geom type="mesh" rgba="0 0 1 1" mesh="motoman_axis_t" />
                       <site name="eeff" pos="0 0 0"/>
-                      <body name="left_ee" pos="0 0 -0.15" euler="0 0 0">
-                        <geom type="cylinder" size="0.01 0.15" group="1" mass="0.001" />
-                        <body name="left_ee_tip" pos="0 0 -0.15" euler="0 0 0">
-                            <geom type="sphere" size="0.02" group="1" mass="0.001" />                            
+                      <body name="left_ee" pos="0 0 -0.1" euler="0 0 0">
+                        <geom type="cylinder" size="0.01 0.1" group="1" mass="0.001" />
+                        <body name="left_ee_tip" pos="0 0 -0.1" euler="0 0 0">
+                            <geom type="sphere" size="0.01" group="1" mass="0.001" />                            
                           <site name="left_ee_tip" pos="0 0 0"/>
                         </body>
                       </body>

@@ -31,3 +31,13 @@ target_link_libraries(point_pusher_mpc
                     push-obj-steer
 )
 
+add_executable(robot_pusher_ik robot_pusher_ik.cpp)
+
+target_link_libraries(robot_pusher_ik
+                    PUBLIC
+                    ${project_required_libraries}
+                    ${project_link_libraries}
+                    push-obj-steer
+                    push-iks
+)
+

@@ -38,6 +38,14 @@ add_executable(obj_steer_test obj_steer_test.cpp)
 
 set_target_properties(push-obj-steer PROPERTIES LINKER_LANGUAGE CXX)
 
+target_link_libraries(push-obj-steer
+                    PUBLIC
+                    push-contact
+                    push-constraint
+                    push-utils
+                    truncated_normal
+)
+
 
 target_link_libraries(obj_steer_test
                     PUBLIC

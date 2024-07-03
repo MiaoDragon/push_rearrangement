@@ -186,6 +186,11 @@ struct FocusedContacts : public Contacts
             int body_idx1=-1, body_idx2=-1;
             double friction = 1.0;
             const char* root_name1 = mj_id2name(m, mjOBJ_BODY, root_body1);
+            std::cout << "contact body 1 geom name:" << mj_id2name(m, mjOBJ_GEOM, d->contact[i].geom1) << std::endl;
+            std::cout << "contact body 2 geom name:" << mj_id2name(m, mjOBJ_GEOM, d->contact[i].geom2) << std::endl;
+            std::cout << "contact body 1 rootname:" << mj_id2name(m, mjOBJ_BODY, root_body1) << std::endl;
+            std::cout << "contact body 2 rootname:" << mj_id2name(m, mjOBJ_BODY, root_body2) << std::endl;
+
             if (strstr(root_name1, "object") != NULL)  // object name: object_[idx]
             {
                 if (obj_body_indices.find(root_body1) != obj_body_indices.end())
@@ -235,6 +240,7 @@ struct FocusedContacts : public Contacts
                 body_type1 = ROBOT; body_idx1 = -2; friction = EE_FRICTION;
             }
             const char* root_name2 = mj_id2name(m, mjOBJ_BODY, root_body2);
+            std::cout << "contact body 2:" << root_name2 << std::endl;
             if (strstr(root_name2, "object") != NULL)
             {
                 if (obj_body_indices.find(root_body2) != obj_body_indices.end())

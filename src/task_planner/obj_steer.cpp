@@ -17,10 +17,13 @@ bool single_obj_steer_ee_position(const mjModel* m, mjData* d,  // d is updated 
 
     /* set ee position */
     Vector3d robot_pos = start_T.block<3,3>(0,0)*ee_contact_in_obj + start_T.block<3,1>(0,3);
-    int ee_bid = mj_name2id(m, mjOBJ_BODY, "ee_position");
-    int qadr1 = m->jnt_qposadr[m->body_jntadr[ee_bid]];
-    int qadr2 = m->jnt_qposadr[m->body_jntadr[ee_bid]+1];
-    int qadr3 = m->jnt_qposadr[m->body_jntadr[ee_bid]+2];
+    // int ee_bid = mj_name2id(m, mjOBJ_BODY, "ee_position");
+    // int qadr1 = m->jnt_qposadr[m->body_jntadr[ee_bid]];
+    // int qadr2 = m->jnt_qposadr[m->body_jntadr[ee_bid]+1];
+    // int qadr3 = m->jnt_qposadr[m->body_jntadr[ee_bid]+2];
+    int qadr1 = m->jnt_qposadr[mj_name2id(m, mjOBJ_JOINT, "ee_position_x")];
+    int qadr2 = m->jnt_qposadr[mj_name2id(m, mjOBJ_JOINT, "ee_position_y")];
+    int qadr3 = m->jnt_qposadr[mj_name2id(m, mjOBJ_JOINT, "ee_position_z")];
 
     d->qpos[qadr1] = robot_pos[0];
     d->qpos[qadr2] = robot_pos[1];

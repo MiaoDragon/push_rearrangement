@@ -49,6 +49,32 @@ target_link_libraries(point_mjpc_track_example
                     truncated_normal
 )
 
+
+add_library(push-iks 
+    inverse_kinematics.cpp
+    )
+set_target_properties(push-iks PROPERTIES LINKER_LANGUAGE CXX)
+target_link_libraries(push-iks
+                    PUBLIC
+                    ${project_link_libraries}
+                    ${control_required_libraries}
+                    push-utils
+                    truncated_normal
+)
+
+add_executable(motoman_ik_test motoman_ik_test.cpp)
+target_link_libraries(motoman_ik_test
+                    PUBLIC
+                    ${project_required_libraries}
+                    ${control_required_libraries}
+                    push-iks
+                    push-utils
+                    truncated_normal
+)
+
+
+
+
 # add_library(mujoco-mppi 
 #     mujoco_mppi.cpp
 #     mujoco_mppi_intvel.cpp

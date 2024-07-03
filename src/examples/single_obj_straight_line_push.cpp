@@ -188,7 +188,7 @@ int main(void)
     Vector3d ee_contact_in_obj;
     ee_contact_in_obj[0] = -0.04-0.005/2;//obj_start_pos[0] - 0.04; //0.7000660902822591; 
     ee_contact_in_obj[1] = 0;//obj_start_pos[1];
-    ee_contact_in_obj[2] = 0;//obj_start_pos[2];
+    ee_contact_in_obj[2] = -0.07;//obj_start_pos[2];
 
     Vector6d obj_twist;
     std::shared_ptr<PositionTrajectory> robot_ee_traj = nullptr;
@@ -229,12 +229,20 @@ int main(void)
 
     /* set up control task */
     // int num_term = 9+2;
-    int num_term = 5;
-    std::vector<int> dim_norm_residual = {3, 3, 3,3,3};
+    // int num_term = 5;
+    int num_term = 12;
+
+    // std::vector<int> dim_norm_residual = {3, 3, 3,3,3};
+    std::vector<int> dim_norm_residual = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+
     // std::vector<int> dim_norm_residual = {1, 1, 1, 1, 1, 1, 1, 1, 1,3,3};
 
-    std::vector<mjpc::NormType> norm = {mjpc::NormType::kQuadratic, mjpc::NormType::kQuadratic, mjpc::NormType::kQuadratic, 
-                                        mjpc::NormType::kQuadratic, mjpc::NormType::kQuadratic};
+    // std::vector<mjpc::NormType> norm = {mjpc::NormType::kQuadratic, mjpc::NormType::kQuadratic, mjpc::NormType::kQuadratic, 
+    //                                     mjpc::NormType::kQuadratic, mjpc::NormType::kQuadratic};
+    std::vector<mjpc::NormType> norm = {mjpc::NormType::kSmoothAbsLoss, mjpc::NormType::kSmoothAbsLoss, mjpc::NormType::kSmoothAbsLoss, 
+                                        mjpc::NormType::kSmoothAbsLoss, mjpc::NormType::kSmoothAbsLoss, mjpc::NormType::kSmoothAbsLoss,
+                                        mjpc::NormType::kSmoothAbsLoss, mjpc::NormType::kSmoothAbsLoss, mjpc::NormType::kSmoothAbsLoss,
+                                        mjpc::NormType::kSmoothAbsLoss, mjpc::NormType::kSmoothAbsLoss, mjpc::NormType::kSmoothAbsLoss,};
 
     // std::vector<mjpc::NormType> norm = {mjpc::NormType::kSmoothAbsLoss, mjpc::NormType::kSmoothAbsLoss, mjpc::NormType::kSmoothAbsLoss, 
     //                                     mjpc::NormType::kSmoothAbsLoss, mjpc::NormType::kSmoothAbsLoss, mjpc::NormType::kSmoothAbsLoss,
@@ -253,7 +261,8 @@ int main(void)
         num_norm_parameter.push_back(mjpc::NormParameterDimension(norm[i]));
     }
     // std::vector<double> weight = {0.5, 0.5, 0.5, 2, 2, 2, 2, 2, 2, 0.1, 0.1};
-    std::vector<double> weight = {2, 10, 10, 0.1, 0.1};
+    // std::vector<double> weight = {2, 10, 10, 0.1, 0.1};
+    std::vector<double> weight = {0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 2, 2, 2, 5, 5, 5};
 
     std::vector<double> parameters = {};
     double risk = 0.0;
@@ -363,13 +372,15 @@ int main(void)
 
 
         Vector3d interp_pos;
-        robot_ee_traj->interpolate((d->time-start_time)/duration, interp_pos);
+        double interpolate_s = (d->time-start_time)/duration;
+        if (interpolate_s > 1) interpolate_s = 1.0;
+        robot_ee_traj->interpolate(interpolate_s, interp_pos);
         d->qpos[robot_qpos_ids[0]] = interp_pos[0];
         d->qpos[robot_qpos_ids[1]] = interp_pos[1];
         d->qpos[robot_qpos_ids[2]] = interp_pos[2];
 
         Matrix4d obj_pose;
-        obj_pose_traj->interpolate((d->time-start_time)/duration, obj_pose);
+        obj_pose_traj->interpolate(interpolate_s, obj_pose);
 
         int obj_jnt_qpos = m->jnt_qposadr[mj_name2id(m, mjOBJ_JOINT, "object_0_joint")];
         d->qpos[obj_jnt_qpos] = obj_pose(0,3);

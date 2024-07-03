@@ -84,16 +84,16 @@ class Estimator {
   // set covariance
   virtual void SetCovariance(const double* covariance) = 0;
 
-  // estimator-specific GUI elements
-  virtual void GUI(mjUI& ui) = 0;
+//   // estimator-specific GUI elements
+//   virtual void GUI(mjUI& ui) = 0;
 
-  // set GUI data
-  virtual void SetGUIData() = 0;
+//   // set GUI data
+//   virtual void SetGUIData() = 0;
 
-  // estimator-specific plots
-  virtual void Plots(mjvFigure* fig_planner, mjvFigure* fig_timer,
-                     int planner_shift, int timer_shift, int planning,
-                     int* shift) = 0;
+//   // estimator-specific plots
+//   virtual void Plots(mjvFigure* fig_planner, mjvFigure* fig_timer,
+//                      int planner_shift, int timer_shift, int planning,
+//                      int* shift) = 0;
 };
 
 // ground truth estimator
@@ -251,15 +251,15 @@ class GroundTruth : public Estimator {
     mju_copy(this->covariance.data(), covariance, ndstate_ * ndstate_);
   };
 
-  // estimator-specific GUI elements
-  void GUI(mjUI& ui) override {};
+//   // estimator-specific GUI elements
+//   void GUI(mjUI& ui) override {};
 
-  // set GUI data
-  void SetGUIData() override {};
+//   // set GUI data
+//   void SetGUIData() override {};
 
-  // estimator-specific plots
-  void Plots(mjvFigure* fig_planner, mjvFigure* fig_timer, int planner_shift,
-             int timer_shift, int planning, int* shift) override{};
+//   // estimator-specific plots
+//   void Plots(mjvFigure* fig_planner, mjvFigure* fig_timer, int planner_shift,
+//              int timer_shift, int planning, int* shift) override{};
 
   // model
   mjModel* model = nullptr;

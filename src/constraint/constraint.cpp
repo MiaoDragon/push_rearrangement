@@ -613,7 +613,7 @@ void total_constraints(const mjModel* m, const mjData* d, const std::vector<int>
  * objective: 0.5 x^TGx + g0^Tx
  * equivalent: x^TGx + 2*g0^Tx
  * vel objective:
- * sum_i (v(i)-v_target(i))^2 + epsilon_lambda*(w(i)-w_target(i))^2 + epsilon_lambda(q^Tq + sum_i contact_i^Tcontact_i)
+ * sum_i (v(i)-v_target(i))^2 + epsilon_w*(w(i)-w_target(i))^2 + epsilon_lambda(q^Tq + sum_i contact_i^Tcontact_i)
  * @param m 
  * @param d 
  * @param robot_v_indices 

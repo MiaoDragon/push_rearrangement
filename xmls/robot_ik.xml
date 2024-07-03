@@ -41,23 +41,21 @@
     <light castshadow="false" diffuse="1 1 1" dir="0 0 -1" directional="true" pos="-0.5 0.5 3"/>
     <site name="world"/>
     <!-- <body name="workspace" pos="0.4 0 0" quat="1 0 0 0">   -->
-    <body name="workspace" pos="-0.05 0 0" quat="1 0 0 0">  
-      <geom name="shelf_bottom" pos="0.925 0 0.5" rgba="1.0 0.64 0.0 1.0" size="0.175 0.45 0.5" type="box" quat="1 0 0 0"/>
-      <geom conaffinity="0" contype="0" group="1" name="shelf_bottom_vis" pos="0.925 0 0.5" rgba="1.0 0.64 0.0 1.0" size="0.175 0.45 0.5" type="box" quat="1 0 0 0"/>
-      <!-- <geom name="shelf_top" pos="0.925 0 1.325" rgba="1.0 0.64 0.0 1.0" size="0.175 0.45 0.025" type="box" quat="1 0 0 0"/>
-      <geom conaffinity="0" contype="0" group="1" name="shelf_top_vis" pos="0.925 0 1.325" rgba="1.0 0.64 0.0 1.0" size="0.175 0.45 0.025" type="box" quat="1 0 0 0"/>
-      <geom name="shelf_padding_left" pos="0.925 -0.425 1.15" rgba="1.0 0.64 0.0 1.0" size="0.175 0.025 0.15" type="box" quat="1 0 0 0"/>
-      <geom conaffinity="0" contype="0" group="1" name="shelf_padding_left_vis" pos="0.925 -0.425 1.15" rgba="1.0 0.64 0.0 1.0" size="0.175 0.025 0.15" type="box" quat="1 0 0 0"/>
-      <geom name="shelf_padding_right" pos="0.925 0.425 1.15" rgba="1.0 0.64 0.0 1.0" size="0.175 0.025 0.15" type="box" quat="1 0 0 0"/>
-      <geom conaffinity="0" contype="0" group="1" name="shelf_padding_right_vis" pos="0.925 0.425 1.15" rgba="1.0 0.64 0.0 1.0" size="0.175 0.025 0.15" type="box" quat="1 0 0 0"/>
-      <geom name="shelf_padding_back" pos="1.075 0 1.15" rgba="1.0 0.64 0.0 1.0" size="0.025 0.45 0.15" type="box" quat="1 0 0 0"/>
-      <geom conaffinity="0" contype="0" group="1" name="shelf_padding_back_vis" pos="1.075 0 1.15" rgba="1.0 0.64 0.0 1.0" size="0.025 0.45 0.15" type="box" quat="1 0 0 0"/> -->
-    </body>
     <body mocap="true" name="body_cam" pos="0.4 0 1.1" xyaxes="0 -1 0 0 0 1">
         <camera fovy="50" name="cam"/>
         <geom conaffinity="2" contype="2" name="geom_cam" rgba="0 0 0 1" size="0.04 0.04 0.01" type="box"/>
     </body>
     <include file="robot_body.xml"/>
+    <!-- <body name="ee_goal" mocap="true" pos="0.9596643361780983 0.22 0.6246445275392399" quat="0.99997882565292 0.0020695812292800746 -0.005795312726922581 0.0021164663332217232"> -->
+    <body name="ee_goal" mocap="true" pos="1.1796643361780983 -0.3199713109568524 1.0296445275392399" quat="0.99997882565292 0.0020695812292800746 -0.005795312726922581 0.0021164663332217232">
+      <!-- <site name="ee_goal" type="sphere" size="0.02"/> -->
+      <geom type="box" size=".05 .05 .05" contype="0" conaffinity="0" rgba=".6 .3 .3 .5"/>
+      <site type="sphere" size="0.01" rgba="0 0 1 1" group="1"/>
+      <!-- <site name="ee_goal_x" type="cylinder" rgba="1 0 0 1" fromto="0 0 0 0.04 0 0"/>
+      <site name="ee_goal_y" type="cylinder" rgba="0 1 0 1" fromto="0 0 0 0 0.04 0"/>
+      <site name="ee_goal_z" type="cylinder" rgba="0 0 1 1" fromto="0 0 0 0 0 0.04"/> -->
+
+    </body>
     <!-- <body name="object_a_cups_0" pos="1.1796643361780983 -0.3199713109568524 1.0296445275392399" quat="0.99997882565292 0.0020695812292800746 -0.005795312726922581 0.0021164663332217232">
       <geom group="3" mesh="a_cups_col" type="mesh"/>
       <geom conaffinity="0" contype="0" group="1" material="a_cups_vis" mesh="a_cups_vis" type="mesh"/>
@@ -73,12 +71,6 @@
       <geom conaffinity="0" contype="0" group="1" material="a_toy_airplane_vis" mesh="a_toy_airplane_vis" type="mesh"/>
       <joint type="free"/>
     </body> -->
-    <!-- <body name="object" pos="0.7399660902822591 -0.05971188968363312 1.08" quat="0.9999876884441344 -0.003640889346286578 -0.003226259955834315 0.000978841980307978"> -->
-      <!-- <geom group="3" mesh="cracker_box_col" type="mesh"/>
-      <geom conaffinity="0" contype="0" group="1" material="cracker_box_vis" mesh="cracker_box_vis" type="mesh"/> -->
-      <!-- <geom type="box" name='object_geom' size="0.04 0.1 0.08" rgba="0 1 0 1"/> -->
-      <!-- <joint type="free"/> -->
-    <!-- </body> -->
   </worldbody>
   <actuator>
     <include file="robot_actuator.xml"/>

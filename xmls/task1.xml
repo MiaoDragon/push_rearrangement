@@ -6,6 +6,7 @@
     autolimits="true"/> -->
   <include file="robot_push.xml"/>
   <include file="obj_setup1.xml"/>
+  <include file="point_robot.xml"/>
 
   <!-- <size memory="1M"/> -->
 

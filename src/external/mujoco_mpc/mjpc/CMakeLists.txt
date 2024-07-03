@@ -28,8 +28,8 @@ add_library(
   libmjpc STATIC
   states/state.cc
   states/state.h
-  agent.cc
-  agent.h
+#   agent.cc
+#   agent.h
   trajectory.cc
   trajectory.h
   utilities.cc
@@ -134,12 +134,12 @@ add_library(
   direct/model_parameters.h
   spline/spline.cc
   spline/spline.h
-  app.cc
-  app.h
+#   app.cc
+#   app.h
   norm.cc
   norm.h
-  simulate.cc
-  simulate.h
+#   simulate.cc
+#   simulate.h
   task.cc
   task.h
   interface.cc

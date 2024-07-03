@@ -625,264 +625,264 @@ void Unscented::QuaternionMeans() {
   }
 }
 
-// estimator-specific GUI elements
-void Unscented::GUI(mjUI& ui) {
-  // ----- estimator ------ //
-  mjuiDef defEstimator[] = {
-      {mjITEM_SECTION, "Estimator", 1, nullptr,
-       "AP"},  // needs new section to satisfy mjMAXUIITEM
-      {mjITEM_BUTTON, "Reset", 2, nullptr, ""},
-      {mjITEM_SLIDERNUM, "Timestep", 2, &gui_timestep_, "1.0e-3 0.1"},
-      {mjITEM_SELECT, "Integrator", 2, &gui_integrator_,
-       "Euler\nRK4\nImplicit\nFastImplicit"},
-      {mjITEM_END}};
+// // estimator-specific GUI elements
+// void Unscented::GUI(mjUI& ui) {
+//   // ----- estimator ------ //
+//   mjuiDef defEstimator[] = {
+//       {mjITEM_SECTION, "Estimator", 1, nullptr,
+//        "AP"},  // needs new section to satisfy mjMAXUIITEM
+//       {mjITEM_BUTTON, "Reset", 2, nullptr, ""},
+//       {mjITEM_SLIDERNUM, "Timestep", 2, &gui_timestep_, "1.0e-3 0.1"},
+//       {mjITEM_SELECT, "Integrator", 2, &gui_integrator_,
+//        "Euler\nRK4\nImplicit\nFastImplicit"},
+//       {mjITEM_END}};
 
-  // add estimator
-  mjui_add(&ui, defEstimator);
+//   // add estimator
+//   mjui_add(&ui, defEstimator);
 
-  // -- process noise -- //
-  int nv = model->nv;
-  int process_noise_shift = 0;
-  mjuiDef defProcessNoise[kMaxProcessNoise + 2];
+//   // -- process noise -- //
+//   int nv = model->nv;
+//   int process_noise_shift = 0;
+//   mjuiDef defProcessNoise[kMaxProcessNoise + 2];
 
-  // separator
-  defProcessNoise[0] = {mjITEM_SEPARATOR, "Process Noise Std.", 1};
-  process_noise_shift++;
+//   // separator
+//   defProcessNoise[0] = {mjITEM_SEPARATOR, "Process Noise Std.", 1};
+//   process_noise_shift++;
 
-  // add UI elements
-  for (int i = 0; i < DimensionProcess(); i++) {
-    // element
-    defProcessNoise[process_noise_shift] = {
-        mjITEM_SLIDERNUM, "", 2, gui_process_noise_.data() + i, "1.0e-8 0.01"};
+//   // add UI elements
+//   for (int i = 0; i < DimensionProcess(); i++) {
+//     // element
+//     defProcessNoise[process_noise_shift] = {
+//         mjITEM_SLIDERNUM, "", 2, gui_process_noise_.data() + i, "1.0e-8 0.01"};
 
-    // set name
-    mju::strcpy_arr(defProcessNoise[process_noise_shift].name, "");
+//     // set name
+//     mju::strcpy_arr(defProcessNoise[process_noise_shift].name, "");
 
-    // shift
-    process_noise_shift++;
-  }
+//     // shift
+//     process_noise_shift++;
+//   }
 
-  // name UI elements
-  int jnt_shift = 1;
-  std::string jnt_name_pos;
-  std::string jnt_name_vel;
+//   // name UI elements
+//   int jnt_shift = 1;
+//   std::string jnt_name_pos;
+//   std::string jnt_name_vel;
 
-  // loop over joints
-  for (int i = 0; i < model->njnt; i++) {
-    int name_jntadr = model->name_jntadr[i];
-    std::string jnt_name(model->names + name_jntadr);
+//   // loop over joints
+//   for (int i = 0; i < model->njnt; i++) {
+//     int name_jntadr = model->name_jntadr[i];
+//     std::string jnt_name(model->names + name_jntadr);
 
-    // get joint type
-    int jnt_type = model->jnt_type[i];
+//     // get joint type
+//     int jnt_type = model->jnt_type[i];
 
-    // free
-    switch (jnt_type) {
-      case mjJNT_FREE:
-        // position
-        jnt_name_pos = jnt_name + " (pos 0)";
-        mju::strcpy_arr(defProcessNoise[jnt_shift + 0].name,
-                        jnt_name_pos.c_str());
+//     // free
+//     switch (jnt_type) {
+//       case mjJNT_FREE:
+//         // position
+//         jnt_name_pos = jnt_name + " (pos 0)";
+//         mju::strcpy_arr(defProcessNoise[jnt_shift + 0].name,
+//                         jnt_name_pos.c_str());
 
-        jnt_name_pos = jnt_name + " (pos 1)";
-        mju::strcpy_arr(defProcessNoise[jnt_shift + 1].name,
-                        jnt_name_pos.c_str());
+//         jnt_name_pos = jnt_name + " (pos 1)";
+//         mju::strcpy_arr(defProcessNoise[jnt_shift + 1].name,
+//                         jnt_name_pos.c_str());
 
-        jnt_name_pos = jnt_name + " (pos 2)";
-        mju::strcpy_arr(defProcessNoise[jnt_shift + 2].name,
-                        jnt_name_pos.c_str());
+//         jnt_name_pos = jnt_name + " (pos 2)";
+//         mju::strcpy_arr(defProcessNoise[jnt_shift + 2].name,
+//                         jnt_name_pos.c_str());
 
-        jnt_name_pos = jnt_name + " (pos 3)";
-        mju::strcpy_arr(defProcessNoise[jnt_shift + 3].name,
-                        jnt_name_pos.c_str());
+//         jnt_name_pos = jnt_name + " (pos 3)";
+//         mju::strcpy_arr(defProcessNoise[jnt_shift + 3].name,
+//                         jnt_name_pos.c_str());
 
-        jnt_name_pos = jnt_name + " (pos 4)";
-        mju::strcpy_arr(defProcessNoise[jnt_shift + 4].name,
-                        jnt_name_pos.c_str());
+//         jnt_name_pos = jnt_name + " (pos 4)";
+//         mju::strcpy_arr(defProcessNoise[jnt_shift + 4].name,
+//                         jnt_name_pos.c_str());
 
-        jnt_name_pos = jnt_name + " (pos 5)";
-        mju::strcpy_arr(defProcessNoise[jnt_shift + 5].name,
-                        jnt_name_pos.c_str());
+//         jnt_name_pos = jnt_name + " (pos 5)";
+//         mju::strcpy_arr(defProcessNoise[jnt_shift + 5].name,
+//                         jnt_name_pos.c_str());
 
-        // velocity
-        jnt_name_vel = jnt_name + " (vel 0)";
-        mju::strcpy_arr(defProcessNoise[nv + jnt_shift + 0].name,
-                        jnt_name_vel.c_str());
+//         // velocity
+//         jnt_name_vel = jnt_name + " (vel 0)";
+//         mju::strcpy_arr(defProcessNoise[nv + jnt_shift + 0].name,
+//                         jnt_name_vel.c_str());
 
-        jnt_name_vel = jnt_name + " (vel 1)";
-        mju::strcpy_arr(defProcessNoise[nv + jnt_shift + 1].name,
-                        jnt_name_vel.c_str());
+//         jnt_name_vel = jnt_name + " (vel 1)";
+//         mju::strcpy_arr(defProcessNoise[nv + jnt_shift + 1].name,
+//                         jnt_name_vel.c_str());
 
-        jnt_name_vel = jnt_name + " (vel 2)";
-        mju::strcpy_arr(defProcessNoise[nv + jnt_shift + 2].name,
-                        jnt_name_vel.c_str());
+//         jnt_name_vel = jnt_name + " (vel 2)";
+//         mju::strcpy_arr(defProcessNoise[nv + jnt_shift + 2].name,
+//                         jnt_name_vel.c_str());
 
-        jnt_name_vel = jnt_name + " (vel 3)";
-        mju::strcpy_arr(defProcessNoise[nv + jnt_shift + 3].name,
-                        jnt_name_vel.c_str());
+//         jnt_name_vel = jnt_name + " (vel 3)";
+//         mju::strcpy_arr(defProcessNoise[nv + jnt_shift + 3].name,
+//                         jnt_name_vel.c_str());
 
-        jnt_name_vel = jnt_name + " (vel 4)";
-        mju::strcpy_arr(defProcessNoise[nv + jnt_shift + 4].name,
-                        jnt_name_vel.c_str());
+//         jnt_name_vel = jnt_name + " (vel 4)";
+//         mju::strcpy_arr(defProcessNoise[nv + jnt_shift + 4].name,
+//                         jnt_name_vel.c_str());
 
-        jnt_name_vel = jnt_name + " (vel 5)";
-        mju::strcpy_arr(defProcessNoise[nv + jnt_shift + 5].name,
-                        jnt_name_vel.c_str());
+//         jnt_name_vel = jnt_name + " (vel 5)";
+//         mju::strcpy_arr(defProcessNoise[nv + jnt_shift + 5].name,
+//                         jnt_name_vel.c_str());
 
-        // shift
-        jnt_shift += 6;
-        break;
-      case mjJNT_BALL:
-        // position
-        jnt_name_pos = jnt_name + " (pos 0)";
-        mju::strcpy_arr(defProcessNoise[jnt_shift + 0].name,
-                        jnt_name_pos.c_str());
+//         // shift
+//         jnt_shift += 6;
+//         break;
+//       case mjJNT_BALL:
+//         // position
+//         jnt_name_pos = jnt_name + " (pos 0)";
+//         mju::strcpy_arr(defProcessNoise[jnt_shift + 0].name,
+//                         jnt_name_pos.c_str());
 
-        jnt_name_pos = jnt_name + " (pos 1)";
-        mju::strcpy_arr(defProcessNoise[jnt_shift + 1].name,
-                        jnt_name_pos.c_str());
+//         jnt_name_pos = jnt_name + " (pos 1)";
+//         mju::strcpy_arr(defProcessNoise[jnt_shift + 1].name,
+//                         jnt_name_pos.c_str());
 
-        jnt_name_pos = jnt_name + " (pos 2)";
-        mju::strcpy_arr(defProcessNoise[jnt_shift + 2].name,
-                        jnt_name_pos.c_str());
+//         jnt_name_pos = jnt_name + " (pos 2)";
+//         mju::strcpy_arr(defProcessNoise[jnt_shift + 2].name,
+//                         jnt_name_pos.c_str());
 
-        // velocity
-        jnt_name_vel = jnt_name + " (vel 0)";
-        mju::strcpy_arr(defProcessNoise[nv + jnt_shift + 0].name,
-                        jnt_name_vel.c_str());
+//         // velocity
+//         jnt_name_vel = jnt_name + " (vel 0)";
+//         mju::strcpy_arr(defProcessNoise[nv + jnt_shift + 0].name,
+//                         jnt_name_vel.c_str());
 
-        jnt_name_vel = jnt_name + " (vel 1)";
-        mju::strcpy_arr(defProcessNoise[nv + jnt_shift + 1].name,
-                        jnt_name_vel.c_str());
+//         jnt_name_vel = jnt_name + " (vel 1)";
+//         mju::strcpy_arr(defProcessNoise[nv + jnt_shift + 1].name,
+//                         jnt_name_vel.c_str());
 
-        jnt_name_vel = jnt_name + " (vel 2)";
-        mju::strcpy_arr(defProcessNoise[nv + jnt_shift + 2].name,
-                        jnt_name_vel.c_str());
+//         jnt_name_vel = jnt_name + " (vel 2)";
+//         mju::strcpy_arr(defProcessNoise[nv + jnt_shift + 2].name,
+//                         jnt_name_vel.c_str());
 
-        // shift
-        jnt_shift += 3;
-        break;
-      case mjJNT_HINGE:
-        // position
-        jnt_name_pos = jnt_name + " (pos)";
-        mju::strcpy_arr(defProcessNoise[jnt_shift].name, jnt_name_pos.c_str());
+//         // shift
+//         jnt_shift += 3;
+//         break;
+//       case mjJNT_HINGE:
+//         // position
+//         jnt_name_pos = jnt_name + " (pos)";
+//         mju::strcpy_arr(defProcessNoise[jnt_shift].name, jnt_name_pos.c_str());
 
-        // velocity
-        jnt_name_vel = jnt_name + " (vel)";
-        mju::strcpy_arr(defProcessNoise[nv + jnt_shift].name,
-                        jnt_name_vel.c_str());
+//         // velocity
+//         jnt_name_vel = jnt_name + " (vel)";
+//         mju::strcpy_arr(defProcessNoise[nv + jnt_shift].name,
+//                         jnt_name_vel.c_str());
 
-        // shift
-        jnt_shift++;
-        break;
-      case mjJNT_SLIDE:
-        // position
-        jnt_name_pos = jnt_name + " (pos)";
-        mju::strcpy_arr(defProcessNoise[jnt_shift].name, jnt_name_pos.c_str());
+//         // shift
+//         jnt_shift++;
+//         break;
+//       case mjJNT_SLIDE:
+//         // position
+//         jnt_name_pos = jnt_name + " (pos)";
+//         mju::strcpy_arr(defProcessNoise[jnt_shift].name, jnt_name_pos.c_str());
 
-        // velocity
-        jnt_name_vel = jnt_name + " (vel)";
-        mju::strcpy_arr(defProcessNoise[nv + jnt_shift].name,
-                        jnt_name_vel.c_str());
+//         // velocity
+//         jnt_name_vel = jnt_name + " (vel)";
+//         mju::strcpy_arr(defProcessNoise[nv + jnt_shift].name,
+//                         jnt_name_vel.c_str());
 
-        // shift
-        jnt_shift++;
-        break;
-    }
-  }
+//         // shift
+//         jnt_shift++;
+//         break;
+//     }
+//   }
 
-  // loop over act
-  std::string act_str;
-  for (int i = 0; i < model->na; i++) {
-    act_str = "act (" + std::to_string(i) + ")";
-    mju::strcpy_arr(defProcessNoise[nv + jnt_shift + i].name, act_str.c_str());
-  }
+//   // loop over act
+//   std::string act_str;
+//   for (int i = 0; i < model->na; i++) {
+//     act_str = "act (" + std::to_string(i) + ")";
+//     mju::strcpy_arr(defProcessNoise[nv + jnt_shift + i].name, act_str.c_str());
+//   }
 
-  // end
-  defProcessNoise[process_noise_shift] = {mjITEM_END};
+//   // end
+//   defProcessNoise[process_noise_shift] = {mjITEM_END};
 
-  // add process noise
-  mjui_add(&ui, defProcessNoise);
+//   // add process noise
+//   mjui_add(&ui, defProcessNoise);
 
-  // -- sensor noise -- //
-  int sensor_noise_shift = 0;
-  mjuiDef defSensorNoise[kMaxSensorNoise + 2];
+//   // -- sensor noise -- //
+//   int sensor_noise_shift = 0;
+//   mjuiDef defSensorNoise[kMaxSensorNoise + 2];
 
-  // separator
-  defSensorNoise[0] = {mjITEM_SEPARATOR, "Sensor Noise Std.", 1};
-  sensor_noise_shift++;
+//   // separator
+//   defSensorNoise[0] = {mjITEM_SEPARATOR, "Sensor Noise Std.", 1};
+//   sensor_noise_shift++;
 
-  // loop over sensors
-  std::string sensor_str;
-  for (int i = 0; i < nsensor_; i++) {
-    std::string name_sensor(model->names +
-                            model->name_sensoradr[sensor_start_ + i]);
-    int dim_sensor = model->sensor_dim[sensor_start_ + i];
+//   // loop over sensors
+//   std::string sensor_str;
+//   for (int i = 0; i < nsensor_; i++) {
+//     std::string name_sensor(model->names +
+//                             model->name_sensoradr[sensor_start_ + i]);
+//     int dim_sensor = model->sensor_dim[sensor_start_ + i];
 
-    // loop over sensor elements
-    for (int j = 0; j < dim_sensor; j++) {
-      // element
-      defSensorNoise[sensor_noise_shift] = {
-          mjITEM_SLIDERNUM, "", 2,
-          gui_sensor_noise_.data() + sensor_noise_shift - 1, "1.0e-8 0.01"};
+//     // loop over sensor elements
+//     for (int j = 0; j < dim_sensor; j++) {
+//       // element
+//       defSensorNoise[sensor_noise_shift] = {
+//           mjITEM_SLIDERNUM, "", 2,
+//           gui_sensor_noise_.data() + sensor_noise_shift - 1, "1.0e-8 0.01"};
 
-      // sensor name
-      sensor_str = name_sensor;
+//       // sensor name
+//       sensor_str = name_sensor;
 
-      // add element index
-      if (dim_sensor > 1) {
-        sensor_str += " (" + std::to_string(j) + ")";
-      }
+//       // add element index
+//       if (dim_sensor > 1) {
+//         sensor_str += " (" + std::to_string(j) + ")";
+//       }
 
-      // set sensor name
-      mju::strcpy_arr(defSensorNoise[sensor_noise_shift].name,
-                      sensor_str.c_str());
+//       // set sensor name
+//       mju::strcpy_arr(defSensorNoise[sensor_noise_shift].name,
+//                       sensor_str.c_str());
 
-      // shift
-      sensor_noise_shift++;
-    }
-  }
+//       // shift
+//       sensor_noise_shift++;
+//     }
+//   }
 
-  // end
-  defSensorNoise[sensor_noise_shift] = {mjITEM_END};
+//   // end
+//   defSensorNoise[sensor_noise_shift] = {mjITEM_END};
 
-  // add sensor noise
-  mjui_add(&ui, defSensorNoise);
-}
+//   // add sensor noise
+//   mjui_add(&ui, defSensorNoise);
+// }
 
-// set GUI data
-void Unscented::SetGUIData() {
-  mju_copy(noise_process.data(), gui_process_noise_.data(), DimensionProcess());
-  mju_copy(noise_sensor.data(), gui_sensor_noise_.data(), DimensionSensor());
-  model->opt.timestep = gui_timestep_;
-  model->opt.integrator = gui_integrator_;
-}
+// // set GUI data
+// void Unscented::SetGUIData() {
+//   mju_copy(noise_process.data(), gui_process_noise_.data(), DimensionProcess());
+//   mju_copy(noise_sensor.data(), gui_sensor_noise_.data(), DimensionSensor());
+//   model->opt.timestep = gui_timestep_;
+//   model->opt.integrator = gui_integrator_;
+// }
 
-// estimator-specific plots
-void Unscented::Plots(mjvFigure* fig_planner, mjvFigure* fig_timer,
-                      int planner_shift, int timer_shift, int planning,
-                      int* shift) {
-  // Unscented info
-  double estimator_bounds[2] = {-6, 6};
+// // estimator-specific plots
+// void Unscented::Plots(mjvFigure* fig_planner, mjvFigure* fig_timer,
+//                       int planner_shift, int timer_shift, int planning,
+//                       int* shift) {
+//   // Unscented info
+//   double estimator_bounds[2] = {-6, 6};
 
-  // covariance trace
-  double trace = Trace(covariance.data(), DimensionProcess());
-  mjpc::PlotUpdateData(fig_planner, estimator_bounds,
-                       fig_planner->linedata[planner_shift + 0][0] + 1,
-                       mju_log10(trace), 100, planner_shift + 0, 0, 1, -100);
+//   // covariance trace
+//   double trace = Trace(covariance.data(), DimensionProcess());
+//   mjpc::PlotUpdateData(fig_planner, estimator_bounds,
+//                        fig_planner->linedata[planner_shift + 0][0] + 1,
+//                        mju_log10(trace), 100, planner_shift + 0, 0, 1, -100);
 
-  // legend
-  mju::strcpy_arr(fig_planner->linename[planner_shift + 0], "Covariance Trace");
+//   // legend
+//   mju::strcpy_arr(fig_planner->linename[planner_shift + 0], "Covariance Trace");
 
-  // Unscented timers
-  double timer_bounds[2] = {0.0, 1.0};
+//   // Unscented timers
+//   double timer_bounds[2] = {0.0, 1.0};
 
-  // update
-  PlotUpdateData(fig_timer, timer_bounds,
-                 fig_timer->linedata[timer_shift + 0][0] + 1, TimerUpdate(),
-                 100, timer_shift + 0, 0, 1, -100);
+//   // update
+//   PlotUpdateData(fig_timer, timer_bounds,
+//                  fig_timer->linedata[timer_shift + 0][0] + 1, TimerUpdate(),
+//                  100, timer_shift + 0, 0, 1, -100);
 
-  // legend
-  mju::strcpy_arr(fig_timer->linename[timer_shift + 0], "Update");
-}
+//   // legend
+//   mju::strcpy_arr(fig_timer->linename[timer_shift + 0], "Update");
+// }
 
 }  // namespace mjpc

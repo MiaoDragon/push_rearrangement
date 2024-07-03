@@ -943,284 +943,284 @@ void Batch::ResetTimers() {
   filter_timer_.prior_set_weight = 0.0;
 }
 
-// estimator-specific GUI elements
-void Batch::GUI(mjUI& ui) {
-  // ----- estimator ------ //
-  mjuiDef defEstimator[] = {
-      {mjITEM_SECTION, "Estimator", 1, nullptr,
-       "AP"},  // needs new section to satisfy mjMAXUIITEM
-      {mjITEM_BUTTON, "Reset", 2, nullptr, ""},
-      {mjITEM_SLIDERNUM, "Timestep", 2, &gui_timestep_, "1.0e-3 0.1"},
-      {mjITEM_SELECT, "Integrator", 2, &gui_integrator_,
-       "Euler\nRK4\nImplicit\nFastImplicit"},
-      {mjITEM_SLIDERINT, "Horizon", 2, &gui_horizon_, "3 3"},
-      {mjITEM_SLIDERNUM, "Prior Scale", 2, &gui_scale_prior_, "1.0e-8 0.1"},
-      {mjITEM_END}};
+// // estimator-specific GUI elements
+// void Batch::GUI(mjUI& ui) {
+//   // ----- estimator ------ //
+//   mjuiDef defEstimator[] = {
+//       {mjITEM_SECTION, "Estimator", 1, nullptr,
+//        "AP"},  // needs new section to satisfy mjMAXUIITEM
+//       {mjITEM_BUTTON, "Reset", 2, nullptr, ""},
+//       {mjITEM_SLIDERNUM, "Timestep", 2, &gui_timestep_, "1.0e-3 0.1"},
+//       {mjITEM_SELECT, "Integrator", 2, &gui_integrator_,
+//        "Euler\nRK4\nImplicit\nFastImplicit"},
+//       {mjITEM_SLIDERINT, "Horizon", 2, &gui_horizon_, "3 3"},
+//       {mjITEM_SLIDERNUM, "Prior Scale", 2, &gui_scale_prior_, "1.0e-8 0.1"},
+//       {mjITEM_END}};
 
-  // set estimation horizon limits
-  mju::sprintf_arr(defEstimator[4].other, "%i %i", kMinDirectHistory,
-                   kMaxFilterHistory);
+//   // set estimation horizon limits
+//   mju::sprintf_arr(defEstimator[4].other, "%i %i", kMinDirectHistory,
+//                    kMaxFilterHistory);
 
-  // add estimator
-  mjui_add(&ui, defEstimator);
+//   // add estimator
+//   mjui_add(&ui, defEstimator);
 
-  // -- process noise -- //
-  int nv = model->nv;
-  int process_noise_shift = 0;
-  mjuiDef defProcessNoise[kMaxProcessNoise + 2];
+//   // -- process noise -- //
+//   int nv = model->nv;
+//   int process_noise_shift = 0;
+//   mjuiDef defProcessNoise[kMaxProcessNoise + 2];
 
-  // separator
-  defProcessNoise[0] = {mjITEM_SEPARATOR, "Process Noise Std.", 1};
-  process_noise_shift++;
+//   // separator
+//   defProcessNoise[0] = {mjITEM_SEPARATOR, "Process Noise Std.", 1};
+//   process_noise_shift++;
 
-  // add UI elements
-  for (int i = 0; i < nv; i++) {
-    // element
-    defProcessNoise[process_noise_shift] = {
-        mjITEM_SLIDERNUM, "", 2, gui_process_noise_.data() + i, "1.0e-8 0.01"};
+//   // add UI elements
+//   for (int i = 0; i < nv; i++) {
+//     // element
+//     defProcessNoise[process_noise_shift] = {
+//         mjITEM_SLIDERNUM, "", 2, gui_process_noise_.data() + i, "1.0e-8 0.01"};
 
-    // set name
-    mju::strcpy_arr(defProcessNoise[process_noise_shift].name, "");
+//     // set name
+//     mju::strcpy_arr(defProcessNoise[process_noise_shift].name, "");
 
-    // shift
-    process_noise_shift++;
-  }
+//     // shift
+//     process_noise_shift++;
+//   }
 
-  // name UI elements
-  int jnt_shift = 1;
-  std::string jnt_name_pos;
-  std::string jnt_name_vel;
+//   // name UI elements
+//   int jnt_shift = 1;
+//   std::string jnt_name_pos;
+//   std::string jnt_name_vel;
 
-  // loop over joints
-  for (int i = 0; i < model->njnt; i++) {
-    int name_jntadr = model->name_jntadr[i];
-    std::string jnt_name(model->names + name_jntadr);
+//   // loop over joints
+//   for (int i = 0; i < model->njnt; i++) {
+//     int name_jntadr = model->name_jntadr[i];
+//     std::string jnt_name(model->names + name_jntadr);
 
-    // get joint type
-    int jnt_type = model->jnt_type[i];
+//     // get joint type
+//     int jnt_type = model->jnt_type[i];
 
-    // free
-    switch (jnt_type) {
-      case mjJNT_FREE:
-        // velocity
-        jnt_name_vel = jnt_name + " (0)";
-        mju::strcpy_arr(defProcessNoise[jnt_shift + 0].name,
-                        jnt_name_vel.c_str());
+//     // free
+//     switch (jnt_type) {
+//       case mjJNT_FREE:
+//         // velocity
+//         jnt_name_vel = jnt_name + " (0)";
+//         mju::strcpy_arr(defProcessNoise[jnt_shift + 0].name,
+//                         jnt_name_vel.c_str());
 
-        jnt_name_vel = jnt_name + " (1)";
-        mju::strcpy_arr(defProcessNoise[jnt_shift + 1].name,
-                        jnt_name_vel.c_str());
+//         jnt_name_vel = jnt_name + " (1)";
+//         mju::strcpy_arr(defProcessNoise[jnt_shift + 1].name,
+//                         jnt_name_vel.c_str());
 
-        jnt_name_vel = jnt_name + " (2)";
-        mju::strcpy_arr(defProcessNoise[jnt_shift + 2].name,
-                        jnt_name_vel.c_str());
+//         jnt_name_vel = jnt_name + " (2)";
+//         mju::strcpy_arr(defProcessNoise[jnt_shift + 2].name,
+//                         jnt_name_vel.c_str());
 
-        jnt_name_vel = jnt_name + " (3)";
-        mju::strcpy_arr(defProcessNoise[jnt_shift + 3].name,
-                        jnt_name_vel.c_str());
+//         jnt_name_vel = jnt_name + " (3)";
+//         mju::strcpy_arr(defProcessNoise[jnt_shift + 3].name,
+//                         jnt_name_vel.c_str());
 
-        jnt_name_vel = jnt_name + " (4)";
-        mju::strcpy_arr(defProcessNoise[jnt_shift + 4].name,
-                        jnt_name_vel.c_str());
+//         jnt_name_vel = jnt_name + " (4)";
+//         mju::strcpy_arr(defProcessNoise[jnt_shift + 4].name,
+//                         jnt_name_vel.c_str());
 
-        jnt_name_vel = jnt_name + " (5)";
-        mju::strcpy_arr(defProcessNoise[jnt_shift + 5].name,
-                        jnt_name_vel.c_str());
+//         jnt_name_vel = jnt_name + " (5)";
+//         mju::strcpy_arr(defProcessNoise[jnt_shift + 5].name,
+//                         jnt_name_vel.c_str());
 
-        // shift
-        jnt_shift += 6;
-        break;
-      case mjJNT_BALL:
-        // velocity
-        jnt_name_vel = jnt_name + " (0)";
-        mju::strcpy_arr(defProcessNoise[jnt_shift + 0].name,
-                        jnt_name_vel.c_str());
+//         // shift
+//         jnt_shift += 6;
+//         break;
+//       case mjJNT_BALL:
+//         // velocity
+//         jnt_name_vel = jnt_name + " (0)";
+//         mju::strcpy_arr(defProcessNoise[jnt_shift + 0].name,
+//                         jnt_name_vel.c_str());
 
-        jnt_name_vel = jnt_name + " (1)";
-        mju::strcpy_arr(defProcessNoise[jnt_shift + 1].name,
-                        jnt_name_vel.c_str());
+//         jnt_name_vel = jnt_name + " (1)";
+//         mju::strcpy_arr(defProcessNoise[jnt_shift + 1].name,
+//                         jnt_name_vel.c_str());
 
-        jnt_name_vel = jnt_name + " (2)";
-        mju::strcpy_arr(defProcessNoise[jnt_shift + 2].name,
-                        jnt_name_vel.c_str());
+//         jnt_name_vel = jnt_name + " (2)";
+//         mju::strcpy_arr(defProcessNoise[jnt_shift + 2].name,
+//                         jnt_name_vel.c_str());
 
-        // shift
-        jnt_shift += 3;
-        break;
-      case mjJNT_HINGE:
-        // velocity
-        jnt_name_vel = jnt_name;
-        mju::strcpy_arr(defProcessNoise[jnt_shift].name, jnt_name_vel.c_str());
+//         // shift
+//         jnt_shift += 3;
+//         break;
+//       case mjJNT_HINGE:
+//         // velocity
+//         jnt_name_vel = jnt_name;
+//         mju::strcpy_arr(defProcessNoise[jnt_shift].name, jnt_name_vel.c_str());
 
-        // shift
-        jnt_shift++;
-        break;
-      case mjJNT_SLIDE:
-        // velocity
-        jnt_name_vel = jnt_name;
-        mju::strcpy_arr(defProcessNoise[jnt_shift].name, jnt_name_vel.c_str());
+//         // shift
+//         jnt_shift++;
+//         break;
+//       case mjJNT_SLIDE:
+//         // velocity
+//         jnt_name_vel = jnt_name;
+//         mju::strcpy_arr(defProcessNoise[jnt_shift].name, jnt_name_vel.c_str());
 
-        // shift
-        jnt_shift++;
-        break;
-    }
-  }
+//         // shift
+//         jnt_shift++;
+//         break;
+//     }
+//   }
 
-  // loop over act
-  // std::string act_str;
-  // for (int i = 0; i < model->na; i++) {
-  //   act_str = "act (" + std::to_string(i) + ")";
-  //   mju::strcpy_arr(defProcessNoise[nv + jnt_shift + i].name,
-  //   act_str.c_str());
-  // }
+//   // loop over act
+//   // std::string act_str;
+//   // for (int i = 0; i < model->na; i++) {
+//   //   act_str = "act (" + std::to_string(i) + ")";
+//   //   mju::strcpy_arr(defProcessNoise[nv + jnt_shift + i].name,
+//   //   act_str.c_str());
+//   // }
 
-  // end
-  defProcessNoise[process_noise_shift] = {mjITEM_END};
+//   // end
+//   defProcessNoise[process_noise_shift] = {mjITEM_END};
 
-  // add process noise
-  mjui_add(&ui, defProcessNoise);
+//   // add process noise
+//   mjui_add(&ui, defProcessNoise);
 
-  // -- sensor noise -- //
-  int sensor_noise_shift = 0;
-  mjuiDef defSensorNoise[kMaxSensorNoise + 2];
+//   // -- sensor noise -- //
+//   int sensor_noise_shift = 0;
+//   mjuiDef defSensorNoise[kMaxSensorNoise + 2];
 
-  // separator
-  defSensorNoise[0] = {mjITEM_SEPARATOR, "Sensor Noise Std.", 1};
-  sensor_noise_shift++;
+//   // separator
+//   defSensorNoise[0] = {mjITEM_SEPARATOR, "Sensor Noise Std.", 1};
+//   sensor_noise_shift++;
 
-  // loop over sensors
-  std::string sensor_str;
-  for (int i = 0; i < nsensor_; i++) {
-    std::string name_sensor(model->names +
-                            model->name_sensoradr[sensor_start_ + i]);
+//   // loop over sensors
+//   std::string sensor_str;
+//   for (int i = 0; i < nsensor_; i++) {
+//     std::string name_sensor(model->names +
+//                             model->name_sensoradr[sensor_start_ + i]);
 
-    // element
-    defSensorNoise[sensor_noise_shift] = {
-        mjITEM_SLIDERNUM, "", 2,
-        gui_sensor_noise_.data() + sensor_noise_shift - 1, "1.0e-8 0.01"};
+//     // element
+//     defSensorNoise[sensor_noise_shift] = {
+//         mjITEM_SLIDERNUM, "", 2,
+//         gui_sensor_noise_.data() + sensor_noise_shift - 1, "1.0e-8 0.01"};
 
-    // sensor name
-    sensor_str = name_sensor;
+//     // sensor name
+//     sensor_str = name_sensor;
 
-    // set sensor name
-    mju::strcpy_arr(defSensorNoise[sensor_noise_shift].name,
-                    sensor_str.c_str());
+//     // set sensor name
+//     mju::strcpy_arr(defSensorNoise[sensor_noise_shift].name,
+//                     sensor_str.c_str());
 
-    // shift
-    sensor_noise_shift++;
-  }
+//     // shift
+//     sensor_noise_shift++;
+//   }
 
-  // end
-  defSensorNoise[sensor_noise_shift] = {mjITEM_END};
+//   // end
+//   defSensorNoise[sensor_noise_shift] = {mjITEM_END};
 
-  // add sensor noise
-  mjui_add(&ui, defSensorNoise);
-}
+//   // add sensor noise
+//   mjui_add(&ui, defSensorNoise);
+// }
 
-// set GUI data
-void Batch::SetGUIData() {
-  // time step
-  model->opt.timestep = gui_timestep_;
+// // set GUI data
+// void Batch::SetGUIData() {
+//   // time step
+//   model->opt.timestep = gui_timestep_;
 
-  // integrator
-  model->opt.integrator = gui_integrator_;
+//   // integrator
+//   model->opt.integrator = gui_integrator_;
 
-  // TODO(taylor): update models if nparam > 0
+//   // TODO(taylor): update models if nparam > 0
 
-  // noise
-  mju_copy(noise_process.data(), gui_process_noise_.data(), DimensionProcess());
-  mju_copy(noise_sensor.data(), gui_sensor_noise_.data(), DimensionSensor());
+//   // noise
+//   mju_copy(noise_process.data(), gui_process_noise_.data(), DimensionProcess());
+//   mju_copy(noise_sensor.data(), gui_sensor_noise_.data(), DimensionSensor());
 
-  // scale prior
-  scale_prior = gui_scale_prior_;
+//   // scale prior
+//   scale_prior = gui_scale_prior_;
 
-  // store estimation horizon
-  int horizon = gui_horizon_;
+//   // store estimation horizon
+//   int horizon = gui_horizon_;
 
-  // changing horizon cases
-  if (horizon > configuration_length_) {  // increase horizon
-    // -- prior weights resize -- //
-    int ntotal_new = model->nv * horizon;
+//   // changing horizon cases
+//   if (horizon > configuration_length_) {  // increase horizon
+//     // -- prior weights resize -- //
+//     int ntotal_new = model->nv * horizon;
 
-    // get previous weights
-    double* weights = weight_prior_.data();
-    double* previous_weights = scratch0_condmat_.data();
-    mju_copy(previous_weights, weights, ntotal_ * ntotal_);
+//     // get previous weights
+//     double* weights = weight_prior_.data();
+//     double* previous_weights = scratch0_condmat_.data();
+//     mju_copy(previous_weights, weights, ntotal_ * ntotal_);
 
-    // set previous in new weights (dimension may have increased)
-    mju_zero(weights, ntotal_new * ntotal_new);
-    SetBlockInMatrix(weights, previous_weights, 1.0, ntotal_new, ntotal_new,
-                     ntotal_, ntotal_, 0, 0);
+//     // set previous in new weights (dimension may have increased)
+//     mju_zero(weights, ntotal_new * ntotal_new);
+//     SetBlockInMatrix(weights, previous_weights, 1.0, ntotal_new, ntotal_new,
+//                      ntotal_, ntotal_, 0, 0);
 
-    // scale_prior * I
-    for (int i = ntotal_; i < ntotal_new; i++) {
-      weights[ntotal_new * i + i] = scale_prior;
-    }
+//     // scale_prior * I
+//     for (int i = ntotal_; i < ntotal_new; i++) {
+//       weights[ntotal_new * i + i] = scale_prior;
+//     }
 
-    // modify trajectories
-    ShiftResizeTrajectory(0, horizon);
+//     // modify trajectories
+//     ShiftResizeTrajectory(0, horizon);
 
-    // update configuration length
-    configuration_length_ = horizon;
-    nvel_ = model->nv * configuration_length_;
-    ntotal_ = nvel_ + nparam_;
-  } else if (horizon < configuration_length_) {  // decrease horizon
-    // -- prior weights resize -- //
-    int ntotal_new = model->nv * horizon;
+//     // update configuration length
+//     configuration_length_ = horizon;
+//     nvel_ = model->nv * configuration_length_;
+//     ntotal_ = nvel_ + nparam_;
+//   } else if (horizon < configuration_length_) {  // decrease horizon
+//     // -- prior weights resize -- //
+//     int ntotal_new = model->nv * horizon;
 
-    // get previous weights
-    double* weights = weight_prior_.data();
-    double* previous_weights = scratch0_condmat_.data();
-    BlockFromMatrix(previous_weights, weights, ntotal_new, ntotal_new, ntotal_,
-                    ntotal_, 0, 0);
+//     // get previous weights
+//     double* weights = weight_prior_.data();
+//     double* previous_weights = scratch0_condmat_.data();
+//     BlockFromMatrix(previous_weights, weights, ntotal_new, ntotal_new, ntotal_,
+//                     ntotal_, 0, 0);
 
-    // set previous in new weights (dimension may have increased)
-    mju_zero(weights, ntotal_ * ntotal_);
-    mju_copy(weights, previous_weights, ntotal_new * ntotal_new);
+//     // set previous in new weights (dimension may have increased)
+//     mju_zero(weights, ntotal_ * ntotal_);
+//     mju_copy(weights, previous_weights, ntotal_new * ntotal_new);
 
-    // compute difference in estimation horizons
-    int horizon_diff = configuration_length_ - horizon;
+//     // compute difference in estimation horizons
+//     int horizon_diff = configuration_length_ - horizon;
 
-    // modify trajectories
-    ShiftResizeTrajectory(horizon_diff, horizon);
+//     // modify trajectories
+//     ShiftResizeTrajectory(horizon_diff, horizon);
 
-    // update configuration length and current time index
-    configuration_length_ = horizon;
-    nvel_ = model->nv * configuration_length_;
-    ntotal_ = nvel_ + nparam_;
-    current_time_index_ -= horizon_diff;
-  }
-}
+//     // update configuration length and current time index
+//     configuration_length_ = horizon;
+//     nvel_ = model->nv * configuration_length_;
+//     ntotal_ = nvel_ + nparam_;
+//     current_time_index_ -= horizon_diff;
+//   }
+// }
 
-// estimator-specific plots
-void Batch::Plots(mjvFigure* fig_planner, mjvFigure* fig_timer,
-                  int planner_shift, int timer_shift, int planning,
-                  int* shift) {
-  // Batch info
+// // estimator-specific plots
+// void Batch::Plots(mjvFigure* fig_planner, mjvFigure* fig_timer,
+//                   int planner_shift, int timer_shift, int planning,
+//                   int* shift) {
+//   // Batch info
 
-  // TODO(taylor): covariance trace
-  // double estimator_bounds[2] = {-6, 6};
+//   // TODO(taylor): covariance trace
+//   // double estimator_bounds[2] = {-6, 6};
 
-  // // covariance trace
-  // double trace = Trace(covariance.data(), DimensionProcess());
-  // mjpc::PlotUpdateData(fig_planner, estimator_bounds,
-  //                      fig_planner->linedata[planner_shift + 0][0] + 1,
-  //                      mju_log10(trace), 100, planner_shift + 0, 0, 1, -100);
+//   // // covariance trace
+//   // double trace = Trace(covariance.data(), DimensionProcess());
+//   // mjpc::PlotUpdateData(fig_planner, estimator_bounds,
+//   //                      fig_planner->linedata[planner_shift + 0][0] + 1,
+//   //                      mju_log10(trace), 100, planner_shift + 0, 0, 1, -100);
 
-  // // legend
-  // mju::strcpy_arr(fig_planner->linename[planner_shift + 0], "Covariance
-  // Trace");
+//   // // legend
+//   // mju::strcpy_arr(fig_planner->linename[planner_shift + 0], "Covariance
+//   // Trace");
 
-  // Batch timers
-  double timer_bounds[2] = {0.0, 1.0};
+//   // Batch timers
+//   double timer_bounds[2] = {0.0, 1.0};
 
-  // update
-  PlotUpdateData(fig_timer, timer_bounds,
-                 fig_timer->linedata[timer_shift + 0][0] + 1, timer_.update,
-                 100, timer_shift + 0, 0, 1, -100);
+//   // update
+//   PlotUpdateData(fig_timer, timer_bounds,
+//                  fig_timer->linedata[timer_shift + 0][0] + 1, timer_.update,
+//                  100, timer_shift + 0, 0, 1, -100);
 
-  // legend
-  mju::strcpy_arr(fig_timer->linename[timer_shift + 0], "Update");
-}
+//   // legend
+//   mju::strcpy_arr(fig_timer->linename[timer_shift + 0], "Update");
+// }
 
 }  // namespace mjpc

@@ -107,15 +107,15 @@ class Batch : public Direct, public Estimator {
     // TODO(taylor): set prior weight = covariance^-1
   };
 
-  // estimator-specific GUI elements
-  void GUI(mjUI& ui) override;
+//   // estimator-specific GUI elements
+//   void GUI(mjUI& ui) override;
 
-  // set GUI data
-  void SetGUIData() override;
+//   // set GUI data
+//   void SetGUIData() override;
 
-  // estimator-specific plots
-  void Plots(mjvFigure* fig_planner, mjvFigure* fig_timer, int planner_shift,
-             int timer_shift, int planning, int* shift) override;
+//   // estimator-specific plots
+//   void Plots(mjvFigure* fig_planner, mjvFigure* fig_timer, int planner_shift,
+//              int timer_shift, int planning, int* shift) override;
 
   // set max history
   void SetMaxHistory(int length) { max_history_ = length; }

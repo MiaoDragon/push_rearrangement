@@ -114,15 +114,15 @@ class Kalman : public Estimator {
   // get prediction timer (ms)
   double TimerPrediction() const { return timer_prediction_; }
 
-  // estimator-specific GUI elements
-  void GUI(mjUI& ui) override;
+//   // estimator-specific GUI elements
+//   void GUI(mjUI& ui) override;
 
-  // set GUI data
-  void SetGUIData() override;
+//   // set GUI data
+//   void SetGUIData() override;
 
-  // estimator-specific plots
-  void Plots(mjvFigure* fig_planner, mjvFigure* fig_timer, int planner_shift,
-             int timer_shift, int planning, int* shift) override;
+//   // estimator-specific plots
+//   void Plots(mjvFigure* fig_planner, mjvFigure* fig_timer, int planner_shift,
+//              int timer_shift, int planning, int* shift) override;
 
   // model
   mjModel* model = nullptr;

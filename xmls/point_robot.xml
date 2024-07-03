@@ -1,0 +1,15 @@
+
+<mujoco model="scene1">
+  <worldbody>
+    <!-- <body name="pointmass" pos="0.22 0 0.1" gravcomp="1"> -->
+    <!-- <body name="pointmass" pos="0.7000660902822591 -0.05971188968363312 1.035" gravcomp="1"> -->
+    <body name="ee_position" pos="0 0 0" gravcomp="1">
+      <camera name="cam0" pos="0 -0.3 0.3" xyaxes="1 0 0 0 0.7 0.7"/>
+      <joint name="ee_position_x" type="slide"  pos="0 0 0" axis="1 0 0" ref="0" />
+      <joint name="ee_position_y" type="slide"  pos="0 0 0" axis="0 1 0" ref="0" />
+      <joint name="ee_position_z" type="slide"  pos="0 0 0" axis="0 0 1" ref="0" />
+      <geom name="ee_position" type="sphere" size=".005" mass="1.0"/>
+      <site name="tip" pos="0 0 0" size="0.001"/>
+    </body>
+  </worldbody>
+</mujoco>
