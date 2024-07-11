@@ -41,3 +41,14 @@ target_link_libraries(robot_pusher_ik
                     push-iks
 )
 
+add_executable(robot_pusher_ik_cbf robot_pusher_ik_cbf.cpp)
+
+target_link_libraries(robot_pusher_ik_cbf
+                    PUBLIC
+                    ${project_required_libraries}
+                    ${project_link_libraries}
+                    push-obj-steer
+                    push-iks
+                    motoman-utils
+)
+

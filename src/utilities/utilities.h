@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <utility>
 #include <vector>
 #include <iostream>
 #include <random>
@@ -12,6 +13,10 @@
 #include <mujoco/mjtnum.h>
 #include <mujoco/mujoco.h>
 #include <mujoco/mjdata.h>
+
+#include <unordered_set>
+#include <boost/functional/hash.hpp>
+
 
 
 typedef Eigen::Vector3d Vector3d;
@@ -95,3 +100,9 @@ void uniform_sample_3d(const Vector3d& ll, const Vector3d& ul, Vector3d& res);
 // void uniform_samples(const VectorXd& ll, const VectorXd& ul,)
 
 bool compare_vector_smaller_eq(const VectorXd& a, const VectorXd& b);
+
+/*****************************************************/
+/****************** other  ******************/
+/*****************************************************/
+typedef std::unordered_set<std::pair<int, int>, boost::hash<std::pair<int, int>>> IntPairSet;
+typedef std::vector<std::pair<int, int>> IntPairVector;

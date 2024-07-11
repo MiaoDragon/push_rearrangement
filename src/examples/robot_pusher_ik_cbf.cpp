@@ -49,6 +49,8 @@
 #include "../utilities/utilities.h"
 #include "../utilities/trajectory.h"
 
+#include "../utilities/motoman_utils.h"
+
 // MuJoCo data structures
 mjModel* m = NULL;                  // MuJoCo model
 mjData* d = NULL;                   // MuJoCo data
@@ -215,15 +217,13 @@ int main(void)
     double pose[7];
 
 
+
     std::vector<int> robot_geoms;
-    for (int i=0; i<m->ngeom; i++)
-    {
-        int rootid = m->body_rootid[m->geom_bodyid[i]];
-        if (strcmp(mj_id2name(m, mjOBJ_BODY, rootid), "motoman_base") == 0)
-        {
-            robot_geoms.push_back(i);
-        }
-    }
+    generate_robot_geoms(m, robot_geoms);
+    IntPairSet exclude_pairs;
+    IntPairVector collision_pairs;
+    generate_exclude_pairs(m, exclude_pairs);
+    generate_collision_pairs(m, robot_geoms, exclude_pairs, collision_pairs);
 
 
     int ee_idx = mj_name2id(m, mjOBJ_BODY, link_name);
@@ -328,38 +328,12 @@ int main(void)
         VectorXd dq(8);
         Vector3d dx = robot_start_position - ee_T.block<3,1>(0,3);
         // damped_inv_ik_position_vel(dx, 1e-4, ee_idx, m, d, select_dofs, dq);
-
-        /* compute the collision velocity */
-        double from_to[6];
-        double jac_col[3*m->nv];
-        for (int i=0; i<robot_geoms.size(); i++)
-        {            
-            double dist = mj_geomDistance(m, d, robot_geoms[i], obs_id, threshold, from_to);
-            if (dist >= threshold) continue;
-            mj_jac(m, d, jac_col, nullptr, from_to, m->geom_bodyid[robot_geoms[i]]);
-            dgdx[0] = from_to[3]-from_to[0];
-            dgdx[1] = from_to[4]-from_to[1];
-            dgdx[2] = from_to[5]-from_to[2];
-            if (dist < 0)
-            {
-                dgdx = -dgdx;
-            }
-            dgdx = -dgdx / dgdx.norm();
-
-            for (int j=0; j<joint_names.size(); j++)
-            {
-                jac_collision(0,j) = jac_col[0*m->nv+select_dofs[j]];
-                jac_collision(1,j) = jac_col[1*m->nv+select_dofs[j]];
-                jac_collision(2,j) = jac_col[2*m->nv+select_dofs[j]];
-            }
-            dgdq += dgdx * jac_collision;
-        }
-
-        dx = dx / 0.1;//m->opt.timestep;
-        dgdq = dgdq / robot_geoms.size();
-        dgdq = dgdq / 0.01;// / m->opt.timestep;
-
-        damped_inv_ik_position_vel_nullspace(dx, 1e-4, ee_idx, dgdq, m, d, select_dofs, dq);
+        // damped_inv_ik_position_vel_nullspace(dx, 1e-4, ee_idx, dgdq, m, d, select_dofs, dq);
+        double max_angvel = 10.0*M_PI/180;
+        std::cout << "before ik_position_cbf.." << std::endl;
+        ik_position_cbf(robot_start_position, ee_idx, m, d, 
+                        select_qpos, select_dofs, collision_pairs, robot_geoms, max_angvel, dq);
+        std::cout << "after ik_position_cbf.." << std::endl;
 
         // change the size of dq
         double max_vel = 0.8;

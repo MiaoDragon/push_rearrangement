@@ -4,6 +4,7 @@
 set(control_required_libraries 
     "glfw"
     "${mjpc_libs}"
+    "eiquadprog"
     # "libmjpc"
     )
 

@@ -44,6 +44,10 @@ add_library(push-utils
     trajectory.cpp
     )
 
+add_library(motoman-utils 
+    motoman_utils.cpp
+    )
+
 
 add_executable(vector_of_vector_test vector_of_vector_test.cpp)
 add_executable(utility_test test.cpp)
@@ -56,6 +60,8 @@ add_executable(traj_test traj_test.cpp)
 
 set_target_properties(push-utils PROPERTIES LINKER_LANGUAGE CXX)
 set_target_properties(truncated_normal PROPERTIES LINKER_LANGUAGE CXX)
+set_target_properties(motoman-utils PROPERTIES LINKER_LANGUAGE CXX)
+
 
 target_link_libraries(utility_test
                     PUBLIC

@@ -45,7 +45,7 @@
                       <body name="left_ee" pos="0 0 -0.1" euler="0 0 0">
                         <geom type="cylinder" size="0.01 0.1" group="1" mass="0.001" />
                         <body name="left_ee_tip" pos="0 0 -0.1" euler="0 0 0">
-                            <geom type="sphere" size="0.01" group="1" mass="0.001" />                            
+                            <geom name="left_ee_tip" type="sphere" size="0.01" group="1" mass="0.001" />                            
                           <site name="left_ee_tip" pos="0 0 0"/>
                         </body>
                       </body>

@@ -46,16 +46,28 @@
         <geom conaffinity="2" contype="2" name="geom_cam" rgba="0 0 0 1" size="0.04 0.04 0.01" type="box"/>
     </body>
     <include file="robot_body.xml"/>
-    <!-- <body name="ee_goal" mocap="true" pos="0.9596643361780983 0.22 0.6246445275392399" quat="0.99997882565292 0.0020695812292800746 -0.005795312726922581 0.0021164663332217232"> -->
-    <body name="ee_goal" mocap="true" pos="1.1796643361780983 -0.3199713109568524 1.0296445275392399" quat="0.99997882565292 0.0020695812292800746 -0.005795312726922581 0.0021164663332217232">
+    <body name="ee_goal" mocap="true" pos="0.9096643361780983 -0.22 1.2246445275392399" quat="0.99997882565292 0.0020695812292800746 -0.005795312726922581 0.0021164663332217232">
+    <!-- <body name="ee_goal" mocap="true" pos="1.1796643361780983 -0.3199713109568524 1.0296445275392399" quat="0.99997882565292 0.0020695812292800746 -0.005795312726922581 0.0021164663332217232"> -->
       <!-- <site name="ee_goal" type="sphere" size="0.02"/> -->
-      <geom type="box" size=".05 .05 .05" contype="0" conaffinity="0" rgba=".6 .3 .3 .5"/>
+      <geom name="ee_goal" type="box" size=".05 .05 .05" contype="0" conaffinity="0" rgba=".6 .3 .3 .5"/>
       <site type="sphere" size="0.01" rgba="0 0 1 1" group="1"/>
       <!-- <site name="ee_goal_x" type="cylinder" rgba="1 0 0 1" fromto="0 0 0 0.04 0 0"/>
       <site name="ee_goal_y" type="cylinder" rgba="0 1 0 1" fromto="0 0 0 0 0.04 0"/>
       <site name="ee_goal_z" type="cylinder" rgba="0 0 1 1" fromto="0 0 0 0 0 0.04"/> -->
-
     </body>
+    <!-- <body name="workspace" pos="-0.1 0 0" quat="1 0 0 0">  
+      <geom name="shelf_bottom" pos="0.925 0 0.5" rgba="1.0 0.64 0.0 1.0" size="0.175 0.45 0.5" type="box" quat="1 0 0 0"/>
+      <geom conaffinity="0" contype="0" group="1" name="shelf_bottom_vis" pos="0.925 0 0.5" rgba="1.0 0.64 0.0 1.0" size="0.175 0.45 0.5" type="box" quat="1 0 0 0"/>
+    </body> -->
+
+    <body name="workspace" pos="-0.05 -0.1 0.6" quat="1 0 0 0">  
+      <geom name="shelf_bottom" pos="0.925 0 0.5" rgba="1.0 0.64 0.0 0.8" size="0.10 0.10 0.08" type="box" quat="1 0 0 0"/>
+      <geom conaffinity="0" contype="0" group="1" name="shelf_bottom_vis" pos="0.925 0 0.5" rgba="1.0 0.64 0.0 0.8" size="0.10 0.10 0.08" type="box" quat="1 0 0 0"/>
+    </body>
+
+
+
+
     <!-- <body name="object_a_cups_0" pos="1.1796643361780983 -0.3199713109568524 1.0296445275392399" quat="0.99997882565292 0.0020695812292800746 -0.005795312726922581 0.0021164663332217232">
       <geom group="3" mesh="a_cups_col" type="mesh"/>
       <geom conaffinity="0" contype="0" group="1" material="a_cups_vis" mesh="a_cups_vis" type="mesh"/>

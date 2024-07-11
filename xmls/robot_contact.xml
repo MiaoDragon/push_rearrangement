@@ -8,6 +8,30 @@
     <exclude body1="left_coupler" body2="left_follower" />
     <exclude body1="arm_left_link_7_t" body2="left_ee" />
     <exclude body1="left_ee_tip" body2="left_ee" />
+    <exclude body1="left_ee" body2="arm_left_link_6_b" />
+    <exclude body1="left_ee_tip" body2="arm_left_link_6_b" />
+    <exclude body1="arm_right_link_6_b" body2="base" />
+    <exclude body1="arm_right_link_6_b" body2="base_mount" />
+    <exclude body1="arm_right_link_6_b" body2="arm_right_link_4_u" />
+    <exclude body1="arm_right_link_2_l" body2="arm_right_link_4_u" />
+    <exclude body1="arm_left_link_6_b" body2="arm_left_link_4_u" />
+    <exclude body1="arm_left_link_2_l" body2="arm_left_link_4_u" />
+    <exclude body1="arm_left_link_1_s" body2="arm_right_link_1_s" />
+    <exclude body1="torso_link_b1" body2="arm_right_link_2_l" />
+    <exclude body1="torso_link_b1" body2="arm_left_link_2_l" />
+
+    <!-- <exclude body1="left_spring_link" body2="left_pad" />
+    <exclude body1="left_coupler" body2="left_pad" />
+    <exclude body1="left_coupler" body2="left_spring_link" />
+    <exclude body1="left_driver" body2="left_pad" />
+    <exclude body1="left_driver" body2="left_follower" />
+    <exclude body1="left_driver" body2="left_spring_link" />
+    <exclude body1="left_pad" body2="right_pad" />
+    <exclude body1="left_follower" body2="right_pad" />
+    <exclude body1="left_spring_link" body2="right_pad" />
+    <exclude body1="left_coupler" body2="right_pad" />
+    <exclude body1="left_driver" body2="right_pad" /> -->
+
   </contact>
 
   
